@@ -1,9 +1,7 @@
 # ens-normalize
 
 * Python implementation of the [ENS Name Normalization Standard](https://github.com/adraffy/ensip-norm/blob/main/draft.md)
-
 * Passes 100% validation tests
-
 * Based on [JavaScript implementation version 1.8.9](https://github.com/adraffy/ens-normalize.js/tree/fa0ad385e77299ad8bddc2287876fbf74a92b8db)
 
 ## Usage
@@ -89,25 +87,28 @@ NormalizationErrorType.NORM_ERR_NFC.details
 # 'This sequence should be correctly "NFC normalized" into its canonical form when it is saved to the blockchain during a valid registration'
 ```
 
-## Build
+## Develop
 
-Linux only!
+### Update the ENS normalization specification *(optional)*
 
-Requirements:
-- [Python>=3.10](https://www.python.org)
-- [Poetry](https://python-poetry.org)
-- [Node.js](https://nodejs.org)
-- [npm](https://www.npmjs.com)
+1. Requirements:
+    - [Node.js](https://nodejs.org)
+    - [npm](https://www.npmjs.com)
+2. Set the hash of the latest commit from the [JavaScript library](https://github.com/adraffy/ens-normalize.js) inside [package.json](tools/updater/package.json)
+3. Run the updater:
+    ```
+    cd tools/updater
+    npm start
+    ```
 
-Update ENS normalization specification:
-```
-cd tools/updater
-npm start
-```
+### Build the package
 
-Build the package (run from project root):
-```
-poetry install
-poetry run pytest
-poetry build
-```
+1. Requirements:
+    - [Python>=3.10](https://www.python.org)
+    - [Poetry](https://python-poetry.org)
+2. Build:
+    ```
+    poetry install
+    poetry run pytest
+    poetry build
+    ```
