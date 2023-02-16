@@ -1,0 +1,9 @@
+{
+  "type": "module",
+  "scripts": {
+    "start": "rm -rf node_modules && npm install && sed -i '' 's/export {\\(.*\\)}/export { WHOLE_MAP, \\1 }/g' node_modules/@adraffy/ens-normalize/dist/index.js && node update-ens.js"
+  },
+  "dependencies": {
+    "@adraffy/ens-normalize": "github:adraffy/ens-normalize.js#fa0ad385e77299ad8bddc2287876fbf74a92b8db"
+  }
+}

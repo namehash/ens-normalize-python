@@ -88,3 +88,26 @@ NormalizationErrorType.NORM_ERR_NFC.message
 NormalizationErrorType.NORM_ERR_NFC.details
 # 'This sequence should be correctly "NFC normalized" into its canonical form when it is saved to the blockchain during a valid registration'
 ```
+
+## Build
+
+Linux only!
+
+Requirements:
+- [Python>=3.10](https://www.python.org)
+- [Poetry](https://python-poetry.org)
+- [Node.js](https://nodejs.org)
+- [npm](https://www.npmjs.com)
+
+Update ENS normalization specification:
+```
+cd tools/updater
+npm start
+```
+
+Build the package (run from project root):
+```
+poetry install
+poetry run pytest
+poetry build
+```
