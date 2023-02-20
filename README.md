@@ -152,7 +152,9 @@ be updated by running this step.
     npm start
     ```
 
-### Build the package
+### Build and test
+
+Installs dependencies, runs validation tests and builds the wheel.
 
 1. Requirements:
     - [Python](https://www.python.org)
