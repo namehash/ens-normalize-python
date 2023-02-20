@@ -156,12 +156,19 @@ be updated by running this step.
 
 Installs dependencies, runs validation tests and builds the wheel.
 
-1. Requirements:
-    - [Python](https://www.python.org)
-    - [Poetry](https://python-poetry.org)
-2. Build:
+1. Install requirements:
+   - [Python](https://www.python.org)
+   - [Poetry](https://python-poetry.org)
+
+2. Install dependencies:
     ```
     poetry install
+    ```
+3. Run tests (including official validation tests):
+    ```
     poetry run pytest
+    ```
+4. Build Python wheel:
+    ```
     poetry build
     ```

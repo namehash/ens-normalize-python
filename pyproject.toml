@@ -2,7 +2,11 @@
 name = "ens-normalize"
 version = "1.8.9"
 description = "Ethereum Name Service (ENS) Name Normalizer"
+license = "MIT"
 authors = ["Jakub Karbowski <jakub@namehash.io>"]
+maintainers = ["NameHash Team <devops@namehash.io>"]
+homepage = "https://github.com/namehash/ens-normalize-python"
+repository = "https://github.com/namehash/ens-normalize-python"
 readme = "README.md"
 packages = [{include = "ens_normalize"}]
 
