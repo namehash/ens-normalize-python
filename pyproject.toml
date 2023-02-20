@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "ens-normalize"
 version = "1.8.9"
-description = "ES6 Ethereum Name Service (ENS) Name Normalizer"
-authors = ["Jakub Karbowski <carbon225@proton.me>"]
+description = "Ethereum Name Service (ENS) Name Normalizer"
+authors = ["Jakub Karbowski <jakub@namehash.io>"]
 readme = "README.md"
 packages = [{include = "ens_normalize"}]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.9"
 regex = "^2022.10.31"
 pyunormalize = "^15.0.0"
 
