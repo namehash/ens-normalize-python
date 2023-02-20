@@ -112,7 +112,7 @@ NormalizationErrorType.NORM_ERR_NFC.details
 
 ## List of reported errors
 
-| Error type | Description | Automatic fixes |
+| Error type | Description | Error fix suggestion |
 | ---------- | ----------- | --------------- |
 | `NORM_ERR_UNDERSCORE` | Contains an underscore in a disallowed position | ✅ |
 | `NORM_ERR_HYPHEN`     | Contains the sequence '--' in a disallowed position | ✅ |
