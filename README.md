@@ -1,5 +1,7 @@
 # ens-normalize
 
+![Tests](https://github.com/namehash/ens-normalize-python/actions/workflows/python-app.yml/badge.svg?branch=main)
+
 * Python implementation of the [ENS Name Normalization Standard](https://github.com/adraffy/ensip-norm/blob/main/draft.md)
 * Passes **100%** of [official validation tests](https://github.com/adraffy/ens-normalize.js/tree/main/validate) (validated automatically with pytest, see below)
 * Passes additional tests for compatibility with the [official library](https://github.com/adraffy/ens-normalize.js)
