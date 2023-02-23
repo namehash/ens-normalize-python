@@ -3,9 +3,9 @@
 ![Tests](https://github.com/namehash/ens-normalize-python/actions/workflows/python-app.yml/badge.svg?branch=main)
 ![PyPI](https://img.shields.io/pypi/v/ens-normalize)
 
-* Python implementation of the [ENS Name Normalization Standard](https://github.com/adraffy/ensip-norm/blob/main/draft.md)
-* Passes **100%** of [official validation tests](https://github.com/adraffy/ens-normalize.js/tree/main/validate) (validated automatically with pytest, see below)
-* Passes additional tests for compatibility with the [official library](https://github.com/adraffy/ens-normalize.js)
+* Python implementation of the [ENS Name Normalization Standard](https://github.com/adraffy/ensip-norm/blob/main/draft.md) as authored by [Adraffy](https://github.com/adraffy).
+* Passes **100%** of the [official validation tests](https://github.com/adraffy/ens-normalize.js/tree/main/validate) (validated automatically with pytest, see below)
+* Passes an additional suite of further tests for compatibility with the [official Javascript library](https://github.com/adraffy/ens-normalize.js)
 * Based on [JavaScript implementation version 1.8.9](https://github.com/adraffy/ens-normalize.js/tree/fa0ad385e77299ad8bddc2287876fbf74a92b8db)
 
 ## Usage
@@ -28,6 +28,8 @@ ens_normalize('Nick.ETH')
 # added a hidden "zero width joiner" character
 ens_normalize('Ni‍ck.ETH')
 # ValueError: Contains a disallowed invisible character
+
+# note: does not enforce .eth TLD 3-character minimum
 ```
 
 ```python
@@ -35,6 +37,9 @@ ens_normalize('Ni‍ck.ETH')
 # output ready for display
 ens_beautify('1⃣2⃣.eth')
 # '1️⃣2️⃣.eth'
+
+# note: normalization is unchanged:
+# ens_normalize(ens_beautify(x)) == ens_normalize(x)
 ```
 
 Detailed label analysis:
@@ -65,7 +70,7 @@ ens_process('Nick.ETH',
     do_beautify=True,
     # ens_tokenize()
     do_tokenize=True,
-    # the reason why the input is not normalized
+    # identify the reason why input may not be normalized
     do_reason=True)
 # ENSProcessResult(
 #     normalized='nick.eth',
@@ -78,7 +83,7 @@ ens_process('Nick.ETH',
 #         start=0,
 #         # the substring that is disallowed
 #         disallowed='N',
-#         # how to fix the error
+#         # suggestion for fixing the error
 #         suggested='n'),
 #     # is the above error fatal (input disallowed)
 #     # or is it a warning (input can be normalized)
@@ -96,11 +101,11 @@ print(res.error.message)
 print(res.error.disallowed, '=>', res.error.suggested)
 # N => n
 # fix the error
-name = name.replace(
+fixed_name = name.replace(
     res.error.disallowed,
     res.error.suggested,
 )
-is_ens_normalized(name)
+is_ens_normalized(fixed_name)
 # True
 ```
 
@@ -138,12 +143,12 @@ NormalizationErrorType.NORM_ERR_NFC.details
 
 ## Develop
 
-### Update the ENS normalization specification *(optional)*
+### Update this library to the latest ENS normalization specification *(optional)*
 
 This library uses files defining the normalization standard
-directly from the [official implementation](https://github.com/adraffy/ens-normalize.js/tree/main/derive).
+directly from the [official Javascript implementation](https://github.com/adraffy/ens-normalize.js/tree/main/derive).
 When the standard is updated with new characters, this library can
-be updated by running this step.
+be updated by running the following steps:
 
 1. Requirements:
     - [Node.js](https://nodejs.org) >= 18
