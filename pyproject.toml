@@ -17,6 +17,7 @@ pyunormalize = "^15.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.1"
+dask = {extras = ["complete"], version = "^2023.2"}
 
 [build-system]
 requires = ["poetry-core"]
