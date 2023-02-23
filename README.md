@@ -14,11 +14,12 @@ The package is available on [pypi](https://pypi.org/project/ens-normalize/)
 pip install ens-normalize
 ```
 
-Use the main functions:
+Import the main functions provided by this library:
 ```python
 from ens_normalize import ens_normalize, ens_beautify
 ```
 
+Normalize an ENS name:
 ```python
 # str -> str
 # raises ValueError for invalid names
@@ -32,6 +33,7 @@ ens_normalize('Ni‍ck.ETH')
 # note: does not enforce .eth TLD 3-character minimum
 ```
 
+Format names with fully-qualified emoji:
 ```python
 # works like ens_normalize()
 # output ready for display
@@ -42,7 +44,7 @@ ens_beautify('1⃣2⃣.eth')
 # ens_normalize(ens_beautify(x)) == ens_normalize(x)
 ```
 
-Detailed label analysis:
+Generate detailed label analysis:
 ```python
 from ens_normalize import ens_tokenize
 # str -> List[Token]
@@ -61,7 +63,7 @@ ens_tokenize('Nàme‍🧙‍♂')
 Advanced usage:
 ```python
 from ens_normalize import ens_process
-# compute many functions in one call
+# compute multiple functions in one call
 # do_* arguments control what is computed
 ens_process('Nick.ETH',
     # ens_normalize()
@@ -70,7 +72,7 @@ ens_process('Nick.ETH',
     do_beautify=True,
     # ens_tokenize()
     do_tokenize=True,
-    # identify the reason why input may not be normalized
+    # identify the reason why the input may not be normalized
     do_reason=True)
 # ENSProcessResult(
 #     normalized='nick.eth',
@@ -85,8 +87,8 @@ ens_process('Nick.ETH',
 #         disallowed='N',
 #         # suggestion for fixing the error
 #         suggested='n'),
-#     # is the above error fatal (input disallowed)
-#     # or is it a warning (input can be normalized)
+#     # is the above error fatal (input cannot be normalized)
+#     # or is it a warning (input is not currently normalized, but it can be normalized)
 #     is_fatal=False)
 ```
 
@@ -109,7 +111,7 @@ is_ens_normalized(fixed_name)
 # True
 ```
 
-Get more information about the error:
+Get more information about an error:
 ```python
 from ens_normalize import NormalizationErrorType
 NormalizationErrorType.NORM_ERR_NFC.message
