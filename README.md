@@ -72,7 +72,7 @@ ens_process('Nick.ETH',
     do_beautify=True,
     # ens_tokenize()
     do_tokenize=True,
-    # identify the reason why the input may not be normalized
+    # identify the reason why the input is not normalized
     do_reason=True)
 # ENSProcessResult(
 #     normalized='nick.eth',
