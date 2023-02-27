@@ -109,13 +109,13 @@ def test_ens_tokenize_full():
     # disallowed/ignored invisible
     ('a\u200d', NormalizationErrorType.NORM_ERR_INVISIBLE, 1, '\u200d', ''),
     # ignored
-    (f'a{chr(173)}', NormalizationErrorType.NORM_ERR_IGNORED, 1, chr(173), ''),  # invisible "soft hyphen"
+    (f'a{chr(173)}', NormalizationWarningType.NORM_WARN_IGNORED, 1, chr(173), ''),  # invisible "soft hyphen"
     # mapped
-    ('aA', NormalizationErrorType.NORM_ERR_MAPPED, 1, 'A', 'a'),
+    ('aA', NormalizationWarningType.NORM_WARN_MAPPED, 1, 'A', 'a'),
     # FE0F emoji
-    ('a🚴‍♂️', NormalizationErrorType.NORM_ERR_FE0F, 1, '🚴‍♂️', '🚴‍♂'),
+    ('a🚴‍♂️', NormalizationWarningType.NORM_WARN_FE0F, 1, '🚴‍♂️', '🚴‍♂'),
     # not NFC normalized
-    ('aa\u0300b', NormalizationErrorType.NORM_ERR_NFC, 1, 'a\u0300', 'à'),
+    ('aa\u0300b', NormalizationWarningType.NORM_WARN_NFC, 1, 'a\u0300', 'à'),
 
     # fenced
     # leading
@@ -137,14 +137,19 @@ def test_ens_tokenize_full():
     ('0x.0χ.0х', NormalizationErrorType.NORM_ERR_CONF_WHOLE, None, None, None),
 ])
 def test_ens_normalization_reason(label, error, start, disallowed, suggested):
+    res = ens_process(label, do_warnings=True)
     if error is None:
-        assert ens_process(label, do_reason=True).error is None
+        assert res.error is None
+        assert len(res.warnings) == 0
     else:
-        res = ens_process(label, do_reason=True)
-        assert res.error.type == error
-        assert res.error.start == start
-        assert res.error.disallowed == disallowed
-        assert res.error.suggested == suggested
+        if isinstance(error, NormalizationWarningType):
+            res_error = res.warnings[0]
+        else:
+            res_error = res.error
+        assert res_error.type == error
+        assert res_error.start == start
+        assert res_error.disallowed == disallowed
+        assert res_error.suggested == suggested
 
 
 @pytest.mark.parametrize(
@@ -157,10 +162,10 @@ def test_ens_normalization_reason(label, error, start, disallowed, suggested):
         (NormalizationErrorType.NORM_ERR_CM_MULTI, 'CM_MULTI'),
         (NormalizationErrorType.NORM_ERR_DISALLOWED, 'DISALLOWED'),
         (NormalizationErrorType.NORM_ERR_INVISIBLE, 'INVISIBLE'),
-        (NormalizationErrorType.NORM_ERR_IGNORED, 'IGNORED'),
-        (NormalizationErrorType.NORM_ERR_MAPPED, 'MAPPED'),
-        (NormalizationErrorType.NORM_ERR_FE0F, 'FE0F'),
-        (NormalizationErrorType.NORM_ERR_NFC, 'NFC'),
+        (NormalizationWarningType.NORM_WARN_IGNORED, 'IGNORED'),
+        (NormalizationWarningType.NORM_WARN_MAPPED, 'MAPPED'),
+        (NormalizationWarningType.NORM_WARN_FE0F, 'FE0F'),
+        (NormalizationWarningType.NORM_WARN_NFC, 'NFC'),
     ]
 )
 def test_normalization_error_type_code(error_type: NormalizationErrorType, code: str):
@@ -181,7 +186,7 @@ def test_normalization_error_type_code(error_type: NormalizationErrorType, code:
     'abc.abc.abc👩🏿‍🦲.aa\u0300b.a¼b.a\xadb',
 ])
 def test_ens_norm_error_pos(text):
-    ret = ens_process(text + '_', do_reason=True)
+    ret = ens_process(text + '_')
     assert ret.error.type == NormalizationErrorType.NORM_ERR_UNDERSCORE
     assert ret.error.start == len(text)
     assert ret.error.disallowed == '_'
@@ -190,7 +195,7 @@ def test_ens_norm_error_pos(text):
 
 def test_ens_norm_error_pos_disallowed():
     t = 'abc.abc.abc👩🏿‍🦲.aa\u0300b.a¼b.a\xadb'
-    ret = ens_process(t + '?', do_reason=True)
+    ret = ens_process(t + '?')
     assert ret.error.type == NormalizationErrorType.NORM_ERR_DISALLOWED
     assert ret.error.start == len(t)
     assert ret.error.disallowed == '?'
@@ -199,8 +204,46 @@ def test_ens_norm_error_pos_disallowed():
 
 def test_ens_norm_error_pos_nfc():
     t = 'abc.abc.abc👩🏿‍🦲.ab.ab.ab'
-    ret = ens_process(t + 'a\u0300', do_reason=True)
-    assert ret.error.type == NormalizationErrorType.NORM_ERR_NFC
-    assert ret.error.start == len(t)
-    assert ret.error.disallowed == 'a\u0300'
-    assert ret.error.suggested == 'à'
+    ret = ens_process(t + 'a\u0300', do_warnings=True)
+    e = ret.warnings[0]
+    assert e.type == NormalizationWarningType.NORM_WARN_NFC
+    assert e.start == len(t)
+    assert e.disallowed == 'a\u0300'
+    assert e.suggested == 'à'
+
+
+def test_ens_warnings_many():
+    t = (
+        f'a{chr(173)}' +
+        'aA.' +
+        'a🚴‍♂️' +
+        'aa\u0300b'
+    )
+
+    res = ens_process(t, do_warnings=True)
+    assert res.error is None
+    assert len(res.warnings) == 4
+
+    e = res.warnings[0]
+    assert e.type == NormalizationWarningType.NORM_WARN_IGNORED
+    assert e.start == 1
+    assert e.disallowed == chr(173)
+    assert e.suggested == ''
+
+    e = res.warnings[1]
+    assert e.type == NormalizationWarningType.NORM_WARN_MAPPED
+    assert e.start == 3
+    assert e.disallowed == 'A'
+    assert e.suggested == 'a'
+
+    e = res.warnings[2]
+    assert e.type == NormalizationWarningType.NORM_WARN_FE0F
+    assert e.start == 6
+    assert e.disallowed == '🚴‍♂️'
+    assert e.suggested == '🚴‍♂'
+
+    e = res.warnings[3]
+    assert e.type == NormalizationWarningType.NORM_WARN_NFC
+    assert e.start == 11
+    assert e.disallowed == 'a\u0300'
+    assert e.suggested == 'à'
