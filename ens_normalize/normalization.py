@@ -895,6 +895,11 @@ def offset_err_start(err: Optional[NormalizationErrorBase], tokens: List[Token])
 
 
 def ens_normalize(text: str) -> str:
+    '''
+    Apply ENS normalization to a string.
+    
+    Raises ValueError if the input cannot be normalized.
+    '''
     res = ens_process(text, do_normalize=True)
     if res.error is not None:
         raise ValueError(res.error.message)
@@ -902,6 +907,11 @@ def ens_normalize(text: str) -> str:
 
 
 def ens_beautify(text: str) -> str:
+    '''
+    Apply ENS normalization with beautification to a string.
+    
+    Raises ValueError if the input cannot be normalized.
+    '''
     res = ens_process(text, do_beautify=True)
     if res.error is not None:
         raise ValueError(res.error.message)
@@ -909,11 +919,47 @@ def ens_beautify(text: str) -> str:
 
 
 def ens_tokenize(input: str) -> List[Token]:
+    '''
+    Tokenize a string using ENS normalization.
+    
+    Returns a list of tokens.
+
+    Each token contains a `type` field and other fields depending on the type.
+    All codepoints are represented as integers.
+    
+    Token types and their fields:
+    - valid
+        - cps: list of codepoints
+    - mapped
+        - cp: input codepoint
+        - cps: list of output codepoints
+    - ignored
+        - cp: codepoint
+    - disallowed
+        - cp: codepoint
+    - emoji
+        - emoji: 'pretty' version of the emoji codepoints (with FE0F)
+        - input: raw input codepoints
+        - cps: text version of the emoji codepoints (without FE0F)
+    - stop:
+        - cp: 0x2E
+    - nfc
+        - input: input codepoints
+        - cps: output codepoints (after NFC normalization)
+    '''
     return ens_process(input, do_tokenize=True).tokens
 
 
 def ens_warnings(input: str) -> List[NormalizationWarning]:
-    return ens_process(input, do_warnings=True).warnings
+    '''
+    This function returns a list of warnings
+    that describe the modifications applied by ENS normalization
+    to the input string.
+    '''
+    res = ens_process(input, do_warnings=True)
+    if res.error is not None:
+        raise ValueError(res.error.message)
+    return res.warnings
 
 
 def is_ens_normalized(name: str) -> bool:
