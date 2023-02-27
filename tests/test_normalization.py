@@ -252,12 +252,27 @@ def test_ens_warnings_many():
 
 def test_throws():
     t = 'a_b'
-    with pytest.raises(ValueError):
+
+    with pytest.raises(NormalizationError) as e:
         ens_normalize(t)
-    with pytest.raises(ValueError):
+    assert e.value.type == NormalizationErrorType.NORM_ERR_UNDERSCORE
+    assert e.value.start == 1
+    assert e.value.disallowed == '_'
+    assert e.value.suggested == ''
+
+    with pytest.raises(NormalizationError) as e:
         ens_beautify(t)
-    with pytest.raises(ValueError):
+    assert e.value.type == NormalizationErrorType.NORM_ERR_UNDERSCORE
+    assert e.value.start == 1
+    assert e.value.disallowed == '_'
+    assert e.value.suggested == ''
+
+    with pytest.raises(NormalizationError) as e:
         ens_warnings(t)
+    assert e.value.type == NormalizationErrorType.NORM_ERR_UNDERSCORE
+    assert e.value.start == 1
+    assert e.value.disallowed == '_'
+    assert e.value.suggested == ''
 
 
 def test_ens_is_normalized():
