@@ -94,7 +94,9 @@ def test_ens_tokenize_full():
     # --
     ('aa--a', NormalizationErrorType.NORM_ERR_HYPHEN, 2, '--', ''),
     # empty
+    # TODO should this return empty string?
     ("", NormalizationErrorType.NORM_ERR_EMPTY, 0, "", ""),
+    ("a..b", NormalizationErrorType.NORM_ERR_EMPTY, 2, '', ''),
 
     # combining mark at the beginning
     ('\u0327a', NormalizationErrorType.NORM_ERR_CM_START, 0, '\u0327', ''),
@@ -247,3 +249,13 @@ def test_ens_warnings_many():
     assert e.start == 11
     assert e.disallowed == 'a\u0300'
     assert e.suggested == 'à'
+
+
+def test_throws():
+    t = 'a_b'
+    with pytest.raises(ValueError):
+        ens_normalize(t)
+    with pytest.raises(ValueError):
+        ens_beautify(t)
+    with pytest.raises(ValueError):
+        ens_warnings(t)
