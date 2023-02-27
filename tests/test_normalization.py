@@ -222,29 +222,28 @@ def test_ens_warnings_many():
         'aa\u0300b'
     )
 
-    res = ens_process(t, do_warnings=True)
-    assert res.error is None
-    assert len(res.warnings) == 4
+    warnings = ens_warnings(t)
+    assert len(warnings) == 4
 
-    e = res.warnings[0]
+    e = warnings[0]
     assert e.type == NormalizationWarningType.NORM_WARN_IGNORED
     assert e.start == 1
     assert e.disallowed == chr(173)
     assert e.suggested == ''
 
-    e = res.warnings[1]
+    e = warnings[1]
     assert e.type == NormalizationWarningType.NORM_WARN_MAPPED
     assert e.start == 3
     assert e.disallowed == 'A'
     assert e.suggested == 'a'
 
-    e = res.warnings[2]
+    e = warnings[2]
     assert e.type == NormalizationWarningType.NORM_WARN_FE0F
     assert e.start == 6
     assert e.disallowed == '🚴‍♂️'
     assert e.suggested == '🚴‍♂'
 
-    e = res.warnings[3]
+    e = warnings[3]
     assert e.type == NormalizationWarningType.NORM_WARN_NFC
     assert e.start == 11
     assert e.disallowed == 'a\u0300'
@@ -259,3 +258,10 @@ def test_throws():
         ens_beautify(t)
     with pytest.raises(ValueError):
         ens_warnings(t)
+
+
+def test_ens_is_normalized():
+    assert is_ens_normalized('a')
+    assert not is_ens_normalized('a_b')
+    assert not is_ens_normalized('Abc')
+    assert not is_ens_normalized('')

@@ -963,4 +963,4 @@ def ens_warnings(input: str) -> List[NormalizationWarning]:
 
 
 def is_ens_normalized(name: str) -> bool:
-    return ens_process(name).normalized == name
+    return ens_process(name, do_normalize=True).normalized == name
