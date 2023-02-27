@@ -9,7 +9,7 @@ from pyunormalize import NFC, NFD
 SPEC_PATH = os.path.join(os.path.dirname(__file__), 'spec.json')
 
 
-class NormalizationErrorType(Enum):
+class NormalizationErrorTypeBase(Enum):
     def __new__(cls, *args):
         value = len(cls.__members__) + 1
         obj = object.__new__(cls)
@@ -19,6 +19,12 @@ class NormalizationErrorType(Enum):
     def __init__(self, message: str, details: str):
         self.message = message
         self.details = details
+
+
+class NormalizationErrorType(NormalizationErrorTypeBase):
+    '''
+    A normalization error which makes normalization impossible.
+    '''
 
     @property
     def code(self) -> str:
@@ -34,11 +40,6 @@ class NormalizationErrorType(Enum):
 
     NORM_ERR_EMPTY      = "Contains a disallowed empty label", \
                           "Empty labels are not allowed, e.g. abc..eth"
-
-    # This should not happen unless there is a bug in the code
-    # If an exception is raised this will be returned as the error
-    NORM_ERR_OTHER      = "Unknown normalization error", \
-                          "Internal error during normalization"
 
     # CM ---------------------
 
@@ -58,18 +59,6 @@ class NormalizationErrorType(Enum):
 
     NORM_ERR_INVISIBLE  = "Contains a disallowed invisible character", \
                           "This invisible character is disallowed"
-
-    NORM_ERR_IGNORED    = "Contains a disallowed \"ignored\" sequence that is disallowed from inclusion in a label when it is saved to the blockchain during a valid registration", \
-                          "This sequence should be \"ignored\" during normalization and is disallowed from inclusion in a label when it is saved to the blockchain during a valid registration"
-
-    NORM_ERR_MAPPED     = "Contains a disallowed \"mapped\" sequence that is disallowed from inclusion in a label when it is saved to the blockchain during a valid registration", \
-                          "This sequence should be \"mapped\" for replacement by the alternative sequence \"{suggested_replacement}\" and is disallowed from inclusion in a label when it is saved to the blockchain during a valid registration"
-
-    NORM_ERR_FE0F       = "Contains a disallowed invisible character inside an emoji", \
-                          "This emoji should be correctly encoded to remove the invisible character that is disallowed from inclusion in a label when it is saved to the blockchain during a valid registration"
-
-    NORM_ERR_NFC        = "Contains a disallowed sequence that is not \"NFC normalized\" into canonical form", \
-                          "This sequence should be correctly \"NFC normalized\" into its canonical form when it is saved to the blockchain during a valid registration"
 
     # FENCED ----------------
 
@@ -91,8 +80,30 @@ class NormalizationErrorType(Enum):
                           "Contains characters from multiple scripts which look confusable"
 
 
-class NormalizationError(NamedTuple):
-    type: NormalizationErrorType
+class NormalizationWarningType(NormalizationErrorTypeBase):
+    '''
+    A normalization warning which makes normalization possible but may result in a different label.
+    '''
+
+    @property
+    def code(self) -> str:
+        return self.name.removeprefix('NORM_WARN_')
+
+    NORM_WARN_IGNORED   = "Contains a disallowed \"ignored\" sequence that is disallowed from inclusion in a label when it is saved to the blockchain during a valid registration", \
+                          "This sequence should be \"ignored\" during normalization and is disallowed from inclusion in a label when it is saved to the blockchain during a valid registration"
+
+    NORM_WARN_MAPPED    = "Contains a disallowed \"mapped\" sequence that is disallowed from inclusion in a label when it is saved to the blockchain during a valid registration", \
+                          "This sequence should be \"mapped\" for replacement by the alternative sequence \"{suggested}\" and is disallowed from inclusion in a label when it is saved to the blockchain during a valid registration"
+
+    NORM_WARN_FE0F      = "Contains a disallowed invisible character inside an emoji", \
+                          "This emoji should be correctly encoded to remove the invisible character that is disallowed from inclusion in a label when it is saved to the blockchain during a valid registration"
+
+    NORM_WARN_NFC       = "Contains a disallowed sequence that is not \"NFC normalized\" into canonical form", \
+                          "This sequence should be correctly \"NFC normalized\" into its canonical form when it is saved to the blockchain during a valid registration"
+
+
+class NormalizationErrorBase(NamedTuple):
+    type: Union[NormalizationErrorType, NormalizationWarningType]
     start: Optional[int]
     disallowed: Optional[str]
     suggested: Optional[str]
@@ -104,6 +115,22 @@ class NormalizationError(NamedTuple):
     @property
     def message(self) -> str:
         return self.type.message
+
+    @property
+    def details(self) -> str:
+        if self.suggested is None:
+            return self.type.details
+        else:
+            return self.type.details.format(suggested=self.suggested)
+
+
+class NormalizationError(NormalizationErrorBase):
+    # TODO strong typing?
+    pass
+
+
+class NormalizationWarning(NormalizationErrorBase):
+    pass
 
 
 TY_VALID = 'valid'
@@ -180,7 +207,7 @@ class ENSProcessResult(NamedTuple):
     beautified: Optional[str]
     tokens: List[Token]
     error: Optional[NormalizationError]
-    is_fatal: bool
+    warnings: List[NormalizationWarning]
 
 
 def str2cps(text: str) -> List[int]:
@@ -638,51 +665,44 @@ def post_check(name: str, label_is_greek: List[bool]) -> Optional[NormalizationE
     return None
 
 
-def analyze_normalization_reason(tokens: List[Token]) -> Optional[NormalizationError]:
+def find_normalization_warnings(tokens: List[Token]) -> List[NormalizationWarning]:
+    warnings = []
     error = None
     start = 0
     disallowed = None
     suggestion = None
-    # find the first token that modified the input
     for tok in tokens:
+        scanned = None
         if tok.type == TY_MAPPED:
-            error = NormalizationErrorType.NORM_ERR_MAPPED
+            error = NormalizationWarningType.NORM_WARN_MAPPED
             disallowed = chr(tok.cp)
             suggestion = cps2str(tok.cps)
-            break
+            scanned = 1
         elif tok.type == TY_IGNORED:
-            error = NormalizationErrorType.NORM_ERR_IGNORED
+            error = NormalizationWarningType.NORM_WARN_IGNORED
             disallowed = chr(tok.cp)
             suggestion = ''
-            break
-        elif tok.type == TY_DISALLOWED:
-            disallowed = chr(tok.cp)
-            suggestion = ''
-            if disallowed == '\u200d' or disallowed == '\u200c':
-                error = NormalizationErrorType.NORM_ERR_INVISIBLE
-            else:
-                error = NormalizationErrorType.NORM_ERR_DISALLOWED
-            break
+            scanned = 1
         elif tok.type == TY_EMOJI:
             if tok.input != tok.cps:
-                error = NormalizationErrorType.NORM_ERR_FE0F
+                error = NormalizationWarningType.NORM_WARN_FE0F
                 disallowed = cps2str(tok.input)
                 suggestion = cps2str(tok.cps)
-                break
-            else:
-                start += len(tok.input)
+            scanned = len(tok.input)
         elif tok.type == TY_NFC:
-            error = NormalizationErrorType.NORM_ERR_NFC
+            error = NormalizationWarningType.NORM_WARN_NFC
             disallowed = cps2str(tok.input)
             suggestion = cps2str(tok.cps)
-            break
+            scanned = len(tok.input)
         elif tok.type == TY_VALID:
-            start += len(tok.cps)
+            scanned = len(tok.cps)
         else:  # TY_STOP
-            start += 1
-    if error is not None:
-        return NormalizationError(error, start, disallowed, suggestion)
-    return None
+            scanned = 1
+        if error is not None:
+            warnings.append(NormalizationError(error, start, disallowed, suggestion))
+            error = None
+        start += scanned
+    return warnings
 
 
 def tokens2str(tokens: List[Token], emoji_fn: Callable[[TokenEmoji], str] = lambda tok: cps2str(tok.cps)) -> str:
@@ -732,9 +752,9 @@ def ens_process(input: str,
                 do_normalize: bool = False,
                 do_beautify: bool = False,
                 do_tokenize: bool = False,
-                do_reason: bool = False) -> ENSProcessResult:
+                do_warnings: bool = False) -> ENSProcessResult:
     tokens: List[Token] = []
-    err_fatal = None
+    error = None
 
     input_cur = 0
     emoji_iter = NORMALIZATION.emoji_regex.finditer(input)
@@ -792,7 +812,7 @@ def ens_process(input: str,
             ))
             continue
 
-        err_fatal = err_fatal or NormalizationError(
+        error = error or NormalizationError(
             NormalizationErrorType.NORM_ERR_INVISIBLE
             if c in ('\u200d', '\u200c')
             else NormalizationErrorType.NORM_ERR_DISALLOWED,
@@ -807,37 +827,30 @@ def ens_process(input: str,
 
     tokens = normalize_tokens(tokens)
 
-    try:
-        err_soft = analyze_normalization_reason(tokens) if do_reason else None
+    warnings = find_normalization_warnings(tokens) if do_warnings else []
 
-        emojis_as_fe0f = ''.join(tokens2str(tokens, lambda _: '\uFE0F'))
-        # true for each label that is greek
-        # will be set by post_check()
-        label_is_greek = []
-        err_fatal = err_fatal or offset_err_start(post_check(emojis_as_fe0f, label_is_greek), tokens)
+    # run post checks
+    emojis_as_fe0f = ''.join(tokens2str(tokens, lambda _: '\uFE0F'))
+    # true for each label that is greek
+    # will be set by post_check()
+    label_is_greek = []
+    error = error or offset_err_start(post_check(emojis_as_fe0f, label_is_greek), tokens)
 
-        err_soft = err_fatal or err_soft
-        is_fatal = err_fatal is not None
+    if error is not None:
+        normalized = None
+        beautified = None
+    else:
+        normalized = tokens2str(tokens) if do_normalize else None
+        beautified = tokens2beautified(tokens, label_is_greek) if do_beautify else None
 
-        if is_fatal:
-            normalized = None
-            beautified = None
-        else:
-            normalized = tokens2str(tokens) if do_normalize else None
-            beautified = tokens2beautified(tokens, label_is_greek) if do_beautify else None
+    # respect the caller's wishes even though we tokenize anyway
+    tokens = tokens if do_tokenize else None
 
-        return ENSProcessResult(normalized, beautified, tokens, err_soft, is_fatal)
-    except:
-        e = NormalizationError(
-            NormalizationErrorType.NORM_ERR_OTHER,
-            start=None,
-            disallowed=None,
-            suggested=None,
-        )
-        return ENSProcessResult(None, None, tokens, e, True)
+    return ENSProcessResult(normalized, beautified, tokens, error, warnings)
 
 
-def offset_err_start(err: Optional[NormalizationError], tokens: List[Token]) -> Optional[NormalizationError]:
+# TODO typing?
+def offset_err_start(err: Optional[NormalizationErrorBase], tokens: List[Token]) -> Optional[NormalizationErrorBase]:
     '''
     Output of post_check() is not input aligned.
     This function offsets the error start to match the input characters.
@@ -883,14 +896,14 @@ def offset_err_start(err: Optional[NormalizationError], tokens: List[Token]) -> 
 
 def ens_normalize(text: str) -> str:
     res = ens_process(text, do_normalize=True)
-    if res.is_fatal:
+    if res.error is not None:
         raise ValueError(res.error.message)
     return res.normalized
 
 
 def ens_beautify(text: str) -> str:
     res = ens_process(text, do_beautify=True)
-    if res.is_fatal:
+    if res.error is not None:
         raise ValueError(res.error.message)
     return res.beautified
 
@@ -899,8 +912,9 @@ def ens_tokenize(input: str) -> List[Token]:
     return ens_process(input, do_tokenize=True).tokens
 
 
+def ens_warnings(input: str) -> List[NormalizationWarning]:
+    return ens_process(input, do_warnings=True).warnings
+
+
 def is_ens_normalized(name: str) -> bool:
-    try:
-        return ens_normalize(name) == name
-    except ValueError:
-        return False
+    return ens_process(name).normalized == name
