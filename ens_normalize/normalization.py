@@ -102,11 +102,20 @@ class NormalizationWarningType(NormalizationErrorTypeBase):
                           "This sequence should be correctly \"NFC normalized\" into its canonical form when it is saved to the blockchain during a valid registration"
 
 
-class NormalizationErrorBase(NamedTuple):
-    type: Union[NormalizationErrorType, NormalizationWarningType]
-    start: Optional[int]
-    disallowed: Optional[str]
-    suggested: Optional[str]
+class NormalizationErrorBase(ValueError):
+    def __init__(self,
+                 type: Union[NormalizationErrorType, NormalizationWarningType],
+                 start: Optional[int],
+                 disallowed: Optional[str],
+                 suggested: Optional[str]):
+        super().__init__(type.message.format(
+            disallowed=disallowed,
+            suggested=suggested,
+        ))
+        self.type = type
+        self.start = start
+        self.disallowed = disallowed
+        self.suggested = suggested
 
     @property
     def code(self) -> str:
@@ -114,23 +123,29 @@ class NormalizationErrorBase(NamedTuple):
 
     @property
     def message(self) -> str:
-        return self.type.message
+        return self.type.message.format(
+            disallowed=self.disallowed,
+            suggested=self.suggested,
+        )
 
     @property
     def details(self) -> str:
-        if self.suggested is None:
-            return self.type.details
-        else:
-            return self.type.details.format(suggested=self.suggested)
+        return self.type.details.format(
+            disallowed=self.disallowed,
+            suggested=self.suggested,
+        )
 
 
 class NormalizationError(NormalizationErrorBase):
-    # TODO strong typing?
-    pass
+    def __init__(self, type: NormalizationErrorType, start: Optional[int], disallowed: Optional[str], suggested: Optional[str]):
+        super().__init__(type, start, disallowed, suggested)
+        self.type = type
 
 
 class NormalizationWarning(NormalizationErrorBase):
-    pass
+    def __init__(self, type: NormalizationWarningType, start: Optional[int], disallowed: Optional[str], suggested: Optional[str]):
+        super().__init__(type, start, disallowed, suggested)
+        self.type = type
 
 
 TY_VALID = 'valid'
@@ -205,9 +220,9 @@ Token = Union[
 class ENSProcessResult(NamedTuple):
     normalized: Optional[str]
     beautified: Optional[str]
-    tokens: List[Token]
+    tokens: Optional[List[Token]]
     error: Optional[NormalizationError]
-    warnings: List[NormalizationWarning]
+    warnings: Optional[List[NormalizationWarning]]
 
 
 def str2cps(text: str) -> List[int]:
@@ -667,30 +682,30 @@ def post_check(name: str, label_is_greek: List[bool]) -> Optional[NormalizationE
 
 def find_normalization_warnings(tokens: List[Token]) -> List[NormalizationWarning]:
     warnings = []
-    error = None
+    warning = None
     start = 0
     disallowed = None
     suggestion = None
     for tok in tokens:
         scanned = None
         if tok.type == TY_MAPPED:
-            error = NormalizationWarningType.NORM_WARN_MAPPED
+            warning = NormalizationWarningType.NORM_WARN_MAPPED
             disallowed = chr(tok.cp)
             suggestion = cps2str(tok.cps)
             scanned = 1
         elif tok.type == TY_IGNORED:
-            error = NormalizationWarningType.NORM_WARN_IGNORED
+            warning = NormalizationWarningType.NORM_WARN_IGNORED
             disallowed = chr(tok.cp)
             suggestion = ''
             scanned = 1
         elif tok.type == TY_EMOJI:
             if tok.input != tok.cps:
-                error = NormalizationWarningType.NORM_WARN_FE0F
+                warning = NormalizationWarningType.NORM_WARN_FE0F
                 disallowed = cps2str(tok.input)
                 suggestion = cps2str(tok.cps)
             scanned = len(tok.input)
         elif tok.type == TY_NFC:
-            error = NormalizationWarningType.NORM_WARN_NFC
+            warning = NormalizationWarningType.NORM_WARN_NFC
             disallowed = cps2str(tok.input)
             suggestion = cps2str(tok.cps)
             scanned = len(tok.input)
@@ -698,9 +713,9 @@ def find_normalization_warnings(tokens: List[Token]) -> List[NormalizationWarnin
             scanned = len(tok.cps)
         else:  # TY_STOP
             scanned = 1
-        if error is not None:
-            warnings.append(NormalizationError(error, start, disallowed, suggestion))
-            error = None
+        if warning is not None:
+            warnings.append(NormalizationWarning(warning, start, disallowed, suggestion))
+            warning = None
         start += scanned
     return warnings
 
@@ -753,6 +768,16 @@ def ens_process(input: str,
                 do_beautify: bool = False,
                 do_tokenize: bool = False,
                 do_warnings: bool = False) -> ENSProcessResult:
+    '''
+    Used to compute `ens_normalize`, `ens_beautify`, `ens_tokenize` and `ens_warnings` in one go.
+    
+    Returns `ENSProcessResult` with the following fields:
+    - `normalized`: normalized name or `None` if input cannot be normalized or `do_normalize` is `False`
+    - `beautified`: beautified name or `None` if input cannot be normalized or `do_beautify` is `False`
+    - `tokens`: list of `Token` objects or `None` if `do_tokenize` is `False`
+    - `error`: `NormalizationError` object or `None` if no error occurred (input can be normalized)
+    - `warnings`: list of `NormalizationWarning` objects or `None` if `do_warnings` is `False`
+    '''
     tokens: List[Token] = []
     error = None
 
@@ -827,7 +852,7 @@ def ens_process(input: str,
 
     tokens = normalize_tokens(tokens)
 
-    warnings = find_normalization_warnings(tokens) if do_warnings else []
+    warnings = find_normalization_warnings(tokens) if do_warnings else None
 
     # run post checks
     emojis_as_fe0f = ''.join(tokens2str(tokens, lambda _: '\uFE0F'))
@@ -898,11 +923,11 @@ def ens_normalize(text: str) -> str:
     '''
     Apply ENS normalization to a string.
     
-    Raises ValueError if the input cannot be normalized.
+    Raises NormalizationError if the input cannot be normalized.
     '''
     res = ens_process(text, do_normalize=True)
     if res.error is not None:
-        raise ValueError(res.error.message)
+        raise res.error
     return res.normalized
 
 
@@ -910,11 +935,11 @@ def ens_beautify(text: str) -> str:
     '''
     Apply ENS normalization with beautification to a string.
     
-    Raises ValueError if the input cannot be normalized.
+    Raises NormalizationError if the input cannot be normalized.
     '''
     res = ens_process(text, do_beautify=True)
     if res.error is not None:
-        raise ValueError(res.error.message)
+        raise res.error
     return res.beautified
 
 
@@ -952,13 +977,15 @@ def ens_tokenize(input: str) -> List[Token]:
 
 def ens_warnings(input: str) -> List[NormalizationWarning]:
     '''
-    This function returns a list of warnings
+    This function returns a list of `NormalizationWarning` objects
     that describe the modifications applied by ENS normalization
     to the input string.
+
+    Raises NormalizationError if the input cannot be normalized.
     '''
     res = ens_process(input, do_warnings=True)
     if res.error is not None:
-        raise ValueError(res.error.message)
+        raise res.error
     return res.warnings
 
 
