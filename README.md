@@ -1,11 +1,11 @@
-# ens-normalize
+# ENS Normalize Python
 
 ![Tests](https://github.com/namehash/ens-normalize-python/actions/workflows/python-app.yml/badge.svg?branch=main)
 ![PyPI](https://img.shields.io/pypi/v/ens-normalize)
 
-* Python implementation of the [ENS Name Normalization Standard](https://github.com/adraffy/ensip-norm/blob/main/draft.md) as authored by [Adraffy](https://github.com/adraffy).
+* Python implementation of the [ENS Name Normalization Standard](https://github.com/adraffy/ensip-norm/blob/main/draft.md) as led by [Adraffy](https://github.com/adraffy).
 * Passes **100%** of the [official validation tests](https://github.com/adraffy/ens-normalize.js/tree/main/validate) (validated automatically with pytest, see below)
-* Passes an additional suite of further tests for compatibility with the [official Javascript library](https://github.com/adraffy/ens-normalize.js)
+* Passes an [additional suite of further tests](/tools/updater/update-ens.js#L54) for compatibility with the [official Javascript library](https://github.com/adraffy/ens-normalize.js)
 * Based on [JavaScript implementation version 1.8.9](https://github.com/adraffy/ens-normalize.js/tree/fa0ad385e77299ad8bddc2287876fbf74a92b8db)
 
 ## Usage
@@ -26,15 +26,22 @@ Normalize an ENS name:
 
 ```python
 # str -> str
-# raises ValueError for invalid names
+# raises NormalizationError for invalid names
 # output ready for namehash
 ens_normalize('Nick.ETH')
 # 'nick.eth'
-# added a hidden "zero width joiner" character
-ens_normalize('Ni‍ck.ETH')
-# NormalizationError: Contains a disallowed invisible character
-
 # note: does not enforce .eth TLD 3-character minimum
+```
+
+Catch normalization errors:
+
+```python
+# added a hidden "zero width joiner" character
+try:
+    ens_normalize('Ni‍ck.ETH')
+except NormalizationError as e:
+    print('Error:', e)
+    # Error: Contains a disallowed invisible character
 ```
 
 Format names with fully-qualified emoji:
@@ -66,11 +73,59 @@ ens_tokenize('Nàme‍🧙‍♂')
 #             type='emoji')]
 ```
 
-TODO: describe `ens_warnings` and `ens_process`.
+Find out how the input was modified during normalization:
+
+```python
+# returns a list of "warnings" - modifications
+# that have been applied to the input during normalization
+ens_warnings('Nàme🧙‍♂️')
+# [NormalizationWarning(type=MAPPED, modification="N"->"n"),
+#  NormalizationWarning(type=FE0F, modification="🧙‍♂️"->"🧙‍♂")]
+```
+
+A typical normalization workflow:
+
+```python
+name = 'Nàme🧙‍♂️'
+try:
+    normalized = ens_normalize(name)
+    print('Normalized:', normalized)
+    # Normalized: nàme🧙‍♂
+    # Success!
+    # Let's check how the input was changed:
+    for w in ens_warnings(name):
+        print(repr(w)) # use repr() to print more information
+    # NormalizationWarning(type=MAPPED, modification="N"->"n")
+    # NormalizationWarning(type=FE0F, modification="🧙‍♂️"->"🧙‍♂")
+    #              invisible character inside emoji ^
+except NormalizationError as e:
+    print('Error:', e)
+```
+
+Speed up your code by running all of the above functions at once:
+
+```python
+# use only the do_* flags you need
+ens_process("Nàme🧙‍♂️",
+    do_normalize=True,
+    do_beautify=True,
+    do_tokenize=True,
+    do_warnings=True,
+)
+# ENSProcessResult(
+#   normalized='nàme🧙\u200d♂',
+#   beautified='nàme🧙\u200d♂️',
+#   tokens=[...],
+#   error=None, # <- this is the exception object thrown by other functions
+#   warnings=[
+#     NormalizationWarning(type=MAPPED, modification="N"->"n"),
+#     NormalizationWarning(type=FE0F, modification="🧙‍♂️"->"🧙‍♂")
+#   ])
+```
 
 ## List of reported errors
 
-| `NormalizationErrorType` | Description | Disallowed sequence reported |
+| `NormalizationErrorType` | Description | Modified substring reported by `ens_warnings` |
 | ---------- | ----------- | --------------- |
 | `NORM_ERR_UNDERSCORE` | Contains an underscore in a disallowed position | ✅ |
 | `NORM_ERR_HYPHEN`     | Contains the sequence '--' in a disallowed position | ✅ |
@@ -88,7 +143,7 @@ TODO: describe `ens_warnings` and `ens_process`.
 
 ## List of reported warnings
 
-| `NormalizationWarningType` | Description | Disallowed sequence reported |
+| `NormalizationWarningType` | Description | Modified substring reported by `ens_warnings` |
 | ---------- | ----------- | --------------- |
 | `NORM_ERR_IGNORED`    | Contains a disallowed character that is ignored during normalization | ✅ |
 | `NORM_ERR_MAPPED`     | Contains a disallowed character that is changed (mapped) to another sequence during normalization | ✅ |
