@@ -117,6 +117,12 @@ class NormalizationErrorBase(ValueError):
         self.disallowed = disallowed
         self.suggested = suggested
 
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}(type={self.type.code}, modification="{self.disallowed}"->"{self.suggested}")'
+
+    def __str__(self) -> str:
+        return self.message
+
     @property
     def code(self) -> str:
         return self.type.code
