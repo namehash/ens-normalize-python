@@ -280,3 +280,17 @@ def test_ens_is_normalized():
     assert not is_ens_normalized('a_b')
     assert not is_ens_normalized('Abc')
     assert not is_ens_normalized('')
+
+
+def test_normalization_error_object():
+    t = 'a_b'
+    try:
+        ens_normalize(t)
+    except NormalizationError as e:
+        assert e.type == NormalizationErrorType.NORM_ERR_UNDERSCORE
+        assert e.start == 1
+        assert e.disallowed == '_'
+        assert e.suggested == ''
+        assert e.code == NormalizationErrorType.NORM_ERR_UNDERSCORE.code
+        assert e.message == NormalizationErrorType.NORM_ERR_UNDERSCORE.message
+        assert e.details == NormalizationErrorType.NORM_ERR_UNDERSCORE.details
