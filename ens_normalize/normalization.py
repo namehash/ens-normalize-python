@@ -331,7 +331,6 @@ def find_group_id(groups, name):
     for i, g in enumerate(groups):
         if g['name'] == name:
             return i
-    raise ValueError(f'Group {name} not found')
 
 
 def group_names_to_ids(groups, whole_map):
@@ -339,7 +338,9 @@ def group_names_to_ids(groups, whole_map):
         if isinstance(v, dict):
             for k in v['M']:
                 for i in range(len(v['M'][k])):
-                    v['M'][k][i] = find_group_id(groups, v['M'][k][i])
+                    id = find_group_id(groups, v['M'][k][i])
+                    assert id is not None
+                    v['M'][k][i] = id
 
 
 class NormalizationData:
@@ -365,14 +366,6 @@ class NormalizationData:
 
 
 NORMALIZATION = NormalizationData()
-
-
-def restore_fe0f_in_emoji(emoji: str) -> str:
-    '''
-    Restore missing FE0Fs in emoji.
-    Equivalent to ens_beautify on a single emoji.
-    '''
-    return NORMALIZATION.emoji_fe0f_lookup.get(filter_fe0f(emoji), emoji)
 
 
 def collapse_valid_tokens(tokens: List[Token]) -> List[Token]:
