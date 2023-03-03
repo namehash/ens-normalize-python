@@ -51,11 +51,11 @@ class NormalizationErrorType(NormalizationErrorTypeBase):
 
     # NSM --------------------
 
-    NORM_ERR_NSM_REPEATED = "TODO", \
-                            "TODO"
+    NORM_ERR_NSM_REPEATED = "Contains a repeated non-spacing mark", \
+                            "Every contiguous sequence of non-spacing mark characters cannot contain more than one occurrence of the same character"
     
-    NORM_ERR_NSM_TOO_MANY = "TODO", \
-                            "TODO"
+    NORM_ERR_NSM_TOO_MANY = "Contains too many consecutive non-spacing marks", \
+                            "Every contiguous sequence of non-spacing mark characters must contain no more than 4 characters"
 
     # TOKENS -----------------
 
