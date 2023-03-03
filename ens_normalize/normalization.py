@@ -49,8 +49,13 @@ class NormalizationErrorType(NormalizationErrorTypeBase):
     NORM_ERR_CM_EMOJI   = "Contains a combining mark in a disallowed position after an emoji", \
                           "A combining mark is disallowed after an emoji"
 
-    NORM_ERR_CM_MULTI   = "Contains a disallowed sequence of multiple sequential combining marks", \
-                          "A sequence of this many combining marks is not allowed in the script used by this label"
+    # NSM --------------------
+
+    NORM_ERR_NSM_REPEATED = "TODO", \
+                            "TODO"
+    
+    NORM_ERR_NSM_TOO_MANY = "TODO", \
+                            "TODO"
 
     # TOKENS -----------------
 
@@ -314,7 +319,7 @@ def read_groups(groups: List[Dict]) -> List[Dict]:
             'P': set(g['primary']),
             'Q': set(g['secondary']),
             'V': set(g['primary'] + g['secondary']),
-            'M': int(g['cm']) if isinstance(g['cm'], int) else -1,
+            'M': 'cm' not in g,
         }
         for g in groups
     ]
@@ -364,6 +369,8 @@ class NormalizationData:
         self.valid: Set[int] = compute_valid(self.groups)
         self.whole_map: Dict = dict_keys_to_int(spec['whole_map'])
         group_names_to_ids(self.groups, self.whole_map)
+        self.nsm_max: int = spec['nsm_max']
+        self.nsm: Set[int] = set(spec['nsm'])
 
         self.cm.remove(CP_FE0F)
 
@@ -589,29 +596,29 @@ def post_check_group(g, cps: List[int], input: List[int]) -> Optional[Normalizat
                 disallowed=chr(cp),
                 suggested='',
             )
-    if m >= 0:
+    if m:
         decomposed = [ord(c) for c in NFD(''.join(chr(cp) for cp in cps))]
         i = 1
         e = len(decomposed)
         while i < e:
-            if decomposed[i] in NORMALIZATION.cm:
+            if decomposed[i] in NORMALIZATION.nsm:
                 j = i + 1
-                while j < e and decomposed[j] in NORMALIZATION.cm:
-                    j += 1
-                if j - i > m:
-                    # We cannot report the entire sequence because it might contain codepoints that are not in the input (NFD).
-                    # There must be at least one extra CM in the input because the NFC form of a character will never throw CM_MULTI by itself.
-                    bad_cp_i = None
+                while j < e and decomposed[j] in NORMALIZATION.nsm:
                     for k in range(i, j):
-                        if decomposed[k] in input:
-                            bad_cp_i = input.index(decomposed[k])
-                            break
-                    # will raise exception if bad_cp_i is None
+                        if decomposed[k] == decomposed[j]:
+                            return NormalizationError(
+                                NormalizationErrorType.NORM_ERR_NSM_REPEATED,
+                                start=None,
+                                disallowed=None,
+                                suggested=None,
+                            )
+                    j += 1
+                if j - i > NORMALIZATION.nsm_max:
                     return NormalizationError(
-                        NormalizationErrorType.NORM_ERR_CM_MULTI,
-                        start=bad_cp_i,
-                        disallowed=chr(input[bad_cp_i]),
-                        suggested='',
+                        NormalizationErrorType.NORM_ERR_NSM_TOO_MANY,
+                        start=None,
+                        disallowed=None,
+                        suggested=None,
                     )
                 i = j
             i += 1

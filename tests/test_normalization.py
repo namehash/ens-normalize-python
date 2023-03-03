@@ -103,8 +103,6 @@ def test_ens_tokenize_full():
     ('\u0327\u0327', NormalizationErrorType.NORM_ERR_CM_START, 0, '\u0327', ''),
     # combining mark after emoji
     ('a👩🏿‍🦲\u0327\u0327', NormalizationErrorType.NORM_ERR_CM_EMOJI, len('a👩🏿‍🦲'), '\u0327', ''),
-    # more than one combining mark
-    ('ك\u0622\u064D\u064Dك', NormalizationErrorType.NORM_ERR_CM_MULTI, 2, '\u064D', ''),
 
     # disallowed
     ('a?', NormalizationErrorType.NORM_ERR_DISALLOWED, 1, '?', ''),
@@ -161,7 +159,6 @@ def test_ens_normalization_reason(label, error, start, disallowed, suggested):
         (NormalizationErrorType.NORM_ERR_HYPHEN, 'HYPHEN'),
         (NormalizationErrorType.NORM_ERR_CM_START, 'CM_START'),
         (NormalizationErrorType.NORM_ERR_CM_EMOJI, 'CM_EMOJI'),
-        (NormalizationErrorType.NORM_ERR_CM_MULTI, 'CM_MULTI'),
         (NormalizationErrorType.NORM_ERR_DISALLOWED, 'DISALLOWED'),
         (NormalizationErrorType.NORM_ERR_INVISIBLE, 'INVISIBLE'),
         (NormalizationWarningType.NORM_WARN_IGNORED, 'IGNORED'),
@@ -294,3 +291,5 @@ def test_normalization_error_object():
         assert e.code == NormalizationErrorType.NORM_ERR_UNDERSCORE.code
         assert e.message == NormalizationErrorType.NORM_ERR_UNDERSCORE.message
         assert e.details == NormalizationErrorType.NORM_ERR_UNDERSCORE.details
+        assert str(e) == e.message
+        assert repr(e) == 'NormalizationError(type=UNDERSCORE, modification="_"->"")'
