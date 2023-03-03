@@ -6,7 +6,7 @@
 * Python implementation of the [ENS Name Normalization Standard](https://github.com/adraffy/ensip-norm/blob/main/draft.md) as led by [Adraffy](https://github.com/adraffy).
 * Passes **100%** of the [official validation tests](https://github.com/adraffy/ens-normalize.js/tree/main/validate) (validated automatically with pytest, see below)
 * Passes an [additional suite of further tests](/tools/updater/update-ens.js#L54) for compatibility with the [official Javascript library](https://github.com/adraffy/ens-normalize.js)
-* Based on [JavaScript implementation version 1.8.9](https://github.com/adraffy/ens-normalize.js/tree/fa0ad385e77299ad8bddc2287876fbf74a92b8db)
+* Based on [JavaScript implementation version 1.9.0](https://github.com/adraffy/ens-normalize.js/tree/4873fbe6393e970e186ab57860cc59cbbb1fa162)
 
 ## Usage
 
