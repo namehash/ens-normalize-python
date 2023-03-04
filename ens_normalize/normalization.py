@@ -597,13 +597,20 @@ def post_check_group(g, cps: List[int], input: List[int]) -> Optional[Normalizat
                 suggested='',
             )
     if m:
-        decomposed = [ord(c) for c in NFD(''.join(chr(cp) for cp in cps))]
+        decomposed = str2cps(NFD(cps2str(cps)))
         i = 1
         e = len(decomposed)
         while i < e:
             if decomposed[i] in NORMALIZATION.nsm:
                 j = i + 1
                 while j < e and decomposed[j] in NORMALIZATION.nsm:
+                    if j - i + 1 > NORMALIZATION.nsm_max:
+                        return NormalizationError(
+                            NormalizationErrorType.NORM_ERR_NSM_TOO_MANY,
+                            start=None,
+                            disallowed=None,
+                            suggested=None,
+                        )
                     for k in range(i, j):
                         if decomposed[k] == decomposed[j]:
                             return NormalizationError(
@@ -613,13 +620,6 @@ def post_check_group(g, cps: List[int], input: List[int]) -> Optional[Normalizat
                                 suggested=None,
                             )
                     j += 1
-                if j - i > NORMALIZATION.nsm_max:
-                    return NormalizationError(
-                        NormalizationErrorType.NORM_ERR_NSM_TOO_MANY,
-                        start=None,
-                        disallowed=None,
-                        suggested=None,
-                    )
                 i = j
             i += 1
 

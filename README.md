@@ -132,8 +132,8 @@ ens_process("Nàme🧙‍♂️",
 | `NORM_ERR_EMPTY`      | Contains a disallowed empty label | ✅ |
 | `NORM_ERR_CM_START`   | Contains a combining mark in a disallowed position at the start of the label | ✅ |
 | `NORM_ERR_CM_EMOJI`   | Contains a combining mark in a disallowed position after an emoji | ✅ |
-| `NORM_ERR_NSM_REPEATED` | *TODO* | ? |
-| `NORM_ERR_NSM_TOO_MANY` | *TODO* | ? |
+| `NORM_ERR_NSM_REPEATED` | Contains a repeated non-spacing mark | ❌ |
+| `NORM_ERR_NSM_TOO_MANY` | Contains too many consecutive non-spacing marks | ❌ |
 | `NORM_ERR_DISALLOWED` | Contains a disallowed character | ✅ |
 | `NORM_ERR_INVISIBLE`  | Contains a disallowed invisible character | ✅ |
 | `NORM_ERR_FENCED_LEADING`  | Contains a disallowed character at the start of a label | ✅ |
