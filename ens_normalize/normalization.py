@@ -78,11 +78,11 @@ class NormalizationErrorType(NormalizationErrorTypeBase):
 
     # CONFUSABLES ----------
 
-    NORM_ERR_CONF_WHOLE = "Contains whole-script confusables", \
-                          "Contains a combination of characters which look confusable. It is unknown which character should be replaced so a disallowed sequence is not reported"
+    NORM_ERR_CONF_WHOLE = "This label can be visually confusing", \
+                          "A label is whole-script confusable if a similarly-looking valid label can be constructed using one alternative character from a different group. It is unknown which character should be replaced so a disallowed sequence is not reported"
 
-    NORM_ERR_CONF_MIXED = "Contains mixed-script confusables", \
-                          "Contains characters from multiple scripts which look confusable"
+    NORM_ERR_CONF_MIXED = "This label contains characters from different scripts which look confusing", \
+                          "Mixed-script confusable characters are disallowed"
 
 
 class NormalizationWarningType(NormalizationErrorTypeBase):
