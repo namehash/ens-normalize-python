@@ -163,7 +163,6 @@ TY_VALID = 'valid'
 TY_MAPPED = 'mapped'
 TY_IGNORED = 'ignored'
 TY_DISALLOWED = 'disallowed'
-TY_ISOLATED = 'isolated'
 TY_EMOJI = 'emoji'
 TY_STOP = 'stop'
 TY_NFC = 'nfc'
@@ -733,7 +732,7 @@ def tokens2str(tokens: List[Token], emoji_fn: Callable[[TokenEmoji], str] = lamb
             continue
         elif tok.type == TY_EMOJI:
             t.append(emoji_fn(tok))
-        elif tok.type in (TY_ISOLATED, TY_STOP):
+        elif tok.type == TY_STOP:
             t.append(chr(tok.cp))
         else:
             t.append(cps2str(tok.cps))
@@ -755,7 +754,7 @@ def tokens2beautified(tokens: List[Token], label_is_greek: List[bool]) -> str:
                 continue
             elif tok.type == TY_EMOJI:
                 s.append(cps2str(tok.emoji))
-            elif tok.type in (TY_ISOLATED, TY_STOP):
+            elif tok.type == TY_STOP:
                 s.append(chr(tok.cp))
             else:
                 if not label_is_greek[label_index]:
