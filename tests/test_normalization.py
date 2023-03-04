@@ -135,6 +135,10 @@ def test_ens_tokenize_full():
     # confusables
     ('bitcoin.bitcοin.bi̇tcoin.bitсoin', NormalizationErrorType.NORM_ERR_CONF_MIXED, 12, 'ο', ''),
     ('0x.0χ.0х', NormalizationErrorType.NORM_ERR_CONF_WHOLE, None, None, None),
+
+    # NSM
+    ('-إؐؑؐ-.eth', NormalizationErrorType.NORM_ERR_NSM_REPEATED, None, None, None),
+    ('-إؐؑؒؓؔ-.eth', NormalizationErrorType.NORM_ERR_NSM_TOO_MANY, None, None, None),
 ])
 def test_ens_normalization_reason(label, error, start, disallowed, suggested):
     res = ens_process(label, do_warnings=True)
