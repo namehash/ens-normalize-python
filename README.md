@@ -39,9 +39,34 @@ Catch normalization errors:
 # added a hidden "zero width joiner" character
 try:
     ens_normalize('Ni‍ck.ETH')
+# Catch the first normalization error encountered (there might be more).
 except NormalizationError as e:
-    print('Error:', e)
-    # Error: Contains a disallowed invisible character
+    # error code
+    print(e.code)
+    # INVISIBLE
+    
+    # a general message
+    print(e.message)
+    # Contains a disallowed invisible character
+    
+    # start index of the disallowed substring in the input string
+    print(e.start)
+    # 2
+    
+    # Other useful fields:
+    # - e.details: str
+    #   A description of the error message.
+    #
+    # - e.disallowed: str
+    #   A substring containing the disallowed sequence,
+    #   '\200D' (zero width joiner) in this case.
+    #
+    # - e.suggested: str
+    #   You can fix this error by replacing e.disallowed
+    #   with e.suggested in the input string.
+    #   In this case this field is '' (empty string).
+    #   It means that the disallowed sequence has to be removed.
+    #   Other errors might be found even after applying this suggestion.
 ```
 
 Format names with fully-qualified emoji:
@@ -76,8 +101,14 @@ ens_tokenize('Nàme‍🧙‍♂')
 Find out how the input was modified during normalization:
 
 ```python
-# returns a list of "warnings" - modifications
-# that have been applied to the input during normalization
+# Returns a list of modifications (substring -> string)
+# that have been applied to the input during normalization.
+# Has the same fields as NormalizationError:
+# - code
+# - message
+# - details
+# - disallowed
+# - suggested
 ens_warnings('Nàme🧙‍♂️')
 # [NormalizationWarning(type=MAPPED, modification="N"->"n"),
 #  NormalizationWarning(type=FE0F, modification="🧙‍♂️"->"🧙‍♂")]
@@ -99,22 +130,25 @@ try:
     # NormalizationWarning(type=FE0F, modification="🧙‍♂️"->"🧙‍♂")
     #              invisible character inside emoji ^
 except NormalizationError as e:
+    # Even if the label cannot be normalized
+    # we can still suggest a fix.
     print('Error:', e)
+    print('Try removing', e.disallowed, 'at index', e.start)
 ```
 
 Speed up your code by running all of the above functions at once:
 
 ```python
 # use only the do_* flags you need
-ens_process("Nàme🧙‍♂️",
+ens_process("Nàme🧙‍♂️1⃣",
     do_normalize=True,
     do_beautify=True,
     do_tokenize=True,
     do_warnings=True,
 )
 # ENSProcessResult(
-#   normalized='nàme🧙\u200d♂',
-#   beautified='nàme🧙\u200d♂️',
+#   normalized='nàme🧙\u200d♂1⃣',
+#   beautified='nàme🧙\u200d♂️1️⃣',
 #   tokens=[...],
 #   error=None, # <- this is the exception object thrown by other functions
 #   warnings=[
@@ -123,7 +157,10 @@ ens_process("Nàme🧙‍♂️",
 #   ])
 ```
 
-## List of reported errors
+## List of all reported normalization errors
+
+For some errors it is not possible to show a substring of the input which caused
+the error. For these errors (see 3rd table column) the `start`, `disallowed` and `suggested` fields will be `None`.
 
 | `NormalizationErrorType` | Description | Modified substring reported by `ens_warnings` |
 | ---------- | ----------- | --------------- |
@@ -139,10 +176,10 @@ ens_process("Nàme🧙‍♂️",
 | `NORM_ERR_FENCED_LEADING`  | Contains a disallowed character at the start of a label | ✅ |
 | `NORM_ERR_FENCED_MULTI`    | Contains a disallowed sequence of 2 characters | ✅ |
 | `NORM_ERR_FENCED_TRAILING` | Contains a disallowed character at the end of a label | ✅ |
-| `NORM_ERR_CONF_WHOLE` | Contains whole-script confusables | ❌ |
-| `NORM_ERR_CONF_MIXED` | Contains mixed-script confusables | ✅ |
+| `NORM_ERR_CONF_WHOLE` | This label can be visually confusing | ❌ |
+| `NORM_ERR_CONF_MIXED` | This label contains characters from different scripts which look confusing | ✅ |
 
-## List of reported warnings
+## List of all reported normalization warnings
 
 | `NormalizationWarningType` | Description | Modified substring reported by `ens_warnings` |
 | ---------- | ----------- | --------------- |
