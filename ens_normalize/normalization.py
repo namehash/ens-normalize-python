@@ -20,15 +20,15 @@ class NormalizationErrorTypeBase(Enum):
         self.message = message
         self.details = details
 
+    @property
+    def code(self) -> str:
+        return self.name
+
 
 class NormalizationErrorType(NormalizationErrorTypeBase):
     '''
     A normalization error which makes normalization impossible.
     '''
-
-    @property
-    def code(self) -> str:
-        return self.name.removeprefix('NORM_ERR_')
 
     # GENERIC ----------------
 
@@ -90,10 +90,6 @@ class NormalizationWarningType(NormalizationErrorTypeBase):
     A normalization warning which makes normalization possible but may result in a different label.
     '''
 
-    @property
-    def code(self) -> str:
-        return self.name.removeprefix('NORM_WARN_')
-
     NORM_WARN_IGNORED   = "Contains a disallowed \"ignored\" sequence that is disallowed from inclusion in a label when it is saved to the blockchain during a valid registration", \
                           "This sequence should be \"ignored\" during normalization and is disallowed from inclusion in a label when it is saved to the blockchain during a valid registration"
 
@@ -123,17 +119,23 @@ class NormalizationErrorBase(ValueError):
         self.suggested = suggested
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}(type={self.type.code}, modification="{self.disallowed}"->"{self.suggested}")'
+        return f'{self.__class__.__name__}(code={self.type.code}, modification="{self.disallowed}"->"{self.suggested}")'
 
     def __str__(self) -> str:
         return self.message
 
     @property
     def code(self) -> str:
+        '''
+        The error code in uppercase string format.
+        '''
         return self.type.code
 
     @property
     def message(self) -> str:
+        '''
+        A short message describing the error.
+        '''
         return self.type.message.format(
             disallowed=self.disallowed,
             suggested=self.suggested,
@@ -141,6 +143,9 @@ class NormalizationErrorBase(ValueError):
 
     @property
     def details(self) -> str:
+        '''
+        A detailed description of the error.
+        '''
         return self.type.details.format(
             disallowed=self.disallowed,
             suggested=self.suggested,
@@ -995,4 +1000,8 @@ def ens_warnings(input: str) -> List[NormalizationWarning]:
 
 
 def is_ens_normalized(name: str) -> bool:
+    '''
+    Checks if the input string is already ENS normalized
+    (i.e. `ens_normalize(name) == name`).
+    '''
     return ens_process(name, do_normalize=True).normalized == name
