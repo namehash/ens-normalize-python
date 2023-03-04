@@ -159,16 +159,16 @@ def test_ens_normalization_reason(label, error, start, disallowed, suggested):
 @pytest.mark.parametrize(
     'error_type, code',
     [
-        (NormalizationErrorType.NORM_ERR_UNDERSCORE, 'UNDERSCORE'),
-        (NormalizationErrorType.NORM_ERR_HYPHEN, 'HYPHEN'),
-        (NormalizationErrorType.NORM_ERR_CM_START, 'CM_START'),
-        (NormalizationErrorType.NORM_ERR_CM_EMOJI, 'CM_EMOJI'),
-        (NormalizationErrorType.NORM_ERR_DISALLOWED, 'DISALLOWED'),
-        (NormalizationErrorType.NORM_ERR_INVISIBLE, 'INVISIBLE'),
-        (NormalizationWarningType.NORM_WARN_IGNORED, 'IGNORED'),
-        (NormalizationWarningType.NORM_WARN_MAPPED, 'MAPPED'),
-        (NormalizationWarningType.NORM_WARN_FE0F, 'FE0F'),
-        (NormalizationWarningType.NORM_WARN_NFC, 'NFC'),
+        (NormalizationErrorType.NORM_ERR_UNDERSCORE, 'NORM_ERR_UNDERSCORE'),
+        (NormalizationErrorType.NORM_ERR_HYPHEN, 'NORM_ERR_HYPHEN'),
+        (NormalizationErrorType.NORM_ERR_CM_START, 'NORM_ERR_CM_START'),
+        (NormalizationErrorType.NORM_ERR_CM_EMOJI, 'NORM_ERR_CM_EMOJI'),
+        (NormalizationErrorType.NORM_ERR_DISALLOWED, 'NORM_ERR_DISALLOWED'),
+        (NormalizationErrorType.NORM_ERR_INVISIBLE, 'NORM_ERR_INVISIBLE'),
+        (NormalizationWarningType.NORM_WARN_IGNORED, 'NORM_WARN_IGNORED'),
+        (NormalizationWarningType.NORM_WARN_MAPPED, 'NORM_WARN_MAPPED'),
+        (NormalizationWarningType.NORM_WARN_FE0F, 'NORM_WARN_FE0F'),
+        (NormalizationWarningType.NORM_WARN_NFC, 'NORM_WARN_NFC'),
     ]
 )
 def test_normalization_error_type_code(error_type: NormalizationErrorType, code: str):
@@ -296,4 +296,4 @@ def test_normalization_error_object():
         assert e.message == NormalizationErrorType.NORM_ERR_UNDERSCORE.message
         assert e.details == NormalizationErrorType.NORM_ERR_UNDERSCORE.details
         assert str(e) == e.message
-        assert repr(e) == 'NormalizationError(type=UNDERSCORE, modification="_"->"")'
+        assert repr(e) == 'NormalizationError(code=NORM_ERR_UNDERSCORE, modification="_"->"")'

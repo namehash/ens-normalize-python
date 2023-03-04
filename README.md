@@ -43,7 +43,7 @@ try:
 except NormalizationError as e:
     # error code
     print(e.code)
-    # INVISIBLE
+    # NORM_ERR_INVISIBLE
     
     # a general message
     print(e.message)
@@ -110,8 +110,8 @@ Find out how the input was modified during normalization:
 # - disallowed
 # - suggested
 ens_warnings('Nàme🧙‍♂️')
-# [NormalizationWarning(type=MAPPED, modification="N"->"n"),
-#  NormalizationWarning(type=FE0F, modification="🧙‍♂️"->"🧙‍♂")]
+# [NormalizationWarning(code=NORM_WARN_MAPPED, modification="N"->"n"),
+#  NormalizationWarning(code=NORM_WARN_FE0F, modification="🧙‍♂️"->"🧙‍♂")]
 ```
 
 A typical normalization workflow:
@@ -126,9 +126,9 @@ try:
     # Let's check how the input was changed:
     for w in ens_warnings(name):
         print(repr(w)) # use repr() to print more information
-    # NormalizationWarning(type=MAPPED, modification="N"->"n")
-    # NormalizationWarning(type=FE0F, modification="🧙‍♂️"->"🧙‍♂")
-    #              invisible character inside emoji ^
+    # NormalizationWarning(code=NORM_WARN_MAPPED, modification="N"->"n")
+    # NormalizationWarning(code=NORM_WARN_FE0F, modification="🧙‍♂️"->"🧙‍♂")
+    #                        invisible character inside emoji ^
 except NormalizationError as e:
     # Even if the label cannot be normalized
     # we can still suggest a fix.
@@ -152,8 +152,8 @@ ens_process("Nàme🧙‍♂️1⃣",
 #   tokens=[...],
 #   error=None, # <- this is the exception object thrown by other functions
 #   warnings=[
-#     NormalizationWarning(type=MAPPED, modification="N"->"n"),
-#     NormalizationWarning(type=FE0F, modification="🧙‍♂️"->"🧙‍♂")
+#     NormalizationWarning(code=NORM_WARN_MAPPED, modification="N"->"n"),
+#     NormalizationWarning(code=NORM_WARN_FE0F, modification="🧙‍♂️"->"🧙‍♂")
 #   ])
 ```
 
