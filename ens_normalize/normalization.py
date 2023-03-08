@@ -751,8 +751,8 @@ def tokens2beautified(tokens: List[Token], label_is_greek: List[bool]) -> str:
             continue
         label_end = i
 
-        for i in range(label_start, label_end):
-            tok = tokens[i]
+        for j in range(label_start, label_end):
+            tok = tokens[j]
             if tok.type in (TY_IGNORED, TY_DISALLOWED):
                 continue
             elif tok.type == TY_EMOJI:
@@ -765,7 +765,7 @@ def tokens2beautified(tokens: List[Token], label_is_greek: List[bool]) -> str:
                 else:
                     s.append(cps2str(tok.cps))
 
-        label_start = i + 1
+        label_start = i
         label_index += 1
 
     return ''.join(s)
