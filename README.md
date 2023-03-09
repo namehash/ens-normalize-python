@@ -80,6 +80,7 @@ ens_beautify('1⃣2⃣.eth')
 
 # note: normalization is unchanged:
 # ens_normalize(ens_beautify(x)) == ens_normalize(x)
+# note: except beautifying emojis, it capitalizes the letter 'ξ' to 'Ξ' (Ethereum symbol) in non-Greek labels
 ```
 
 Generate detailed label analysis:

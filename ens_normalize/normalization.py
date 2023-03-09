@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, NamedTuple, Set, Optional, Tuple, Union
+from typing import Callable, Dict, List, NamedTuple, Set, Optional, Tuple, Union, Iterable
 from enum import Enum
 import regex
 import json
@@ -26,9 +26,9 @@ class NormalizationErrorTypeBase(Enum):
 
 
 class NormalizationErrorType(NormalizationErrorTypeBase):
-    '''
+    """
     A normalization error which makes normalization impossible.
-    '''
+    """
 
     # GENERIC ----------------
 
@@ -86,9 +86,9 @@ class NormalizationErrorType(NormalizationErrorTypeBase):
 
 
 class NormalizationWarningType(NormalizationErrorTypeBase):
-    '''
+    """
     A normalization warning which makes normalization possible but may result in a different label.
-    '''
+    """
 
     NORM_WARN_IGNORED   = "Contains a disallowed \"ignored\" sequence that is disallowed from inclusion in a label when it is saved to the blockchain during a valid registration", \
                           "This sequence should be \"ignored\" during normalization and is disallowed from inclusion in a label when it is saved to the blockchain during a valid registration"
@@ -126,16 +126,16 @@ class NormalizationErrorBase(ValueError):
 
     @property
     def code(self) -> str:
-        '''
+        """
         The error code in uppercase string format.
-        '''
+        """
         return self.type.code
 
     @property
     def message(self) -> str:
-        '''
+        """
         A short message describing the error.
-        '''
+        """
         return self.type.message.format(
             disallowed=self.disallowed,
             suggested=self.suggested,
@@ -143,9 +143,9 @@ class NormalizationErrorBase(ValueError):
 
     @property
     def details(self) -> str:
-        '''
+        """
         A detailed description of the error.
-        '''
+        """
         return self.type.details.format(
             disallowed=self.disallowed,
             suggested=self.suggested,
@@ -241,33 +241,33 @@ class ENSProcessResult(NamedTuple):
 
 
 def str2cps(text: str) -> List[int]:
-    '''
+    """
     Convert text to a list of integer codepoints.
-    '''
+    """
     return [ord(c) for c in text]
 
 
 def cps2str(cps: List[int]) -> str:
-    '''
+    """
     Convert a list of integer codepoints to string.
-    '''
+    """
     return ''.join(chr(cp) for cp in cps)
 
 
 def filter_fe0f(text: str) -> str:
-    '''
+    """
     Remove all FE0F from text.
-    '''
+    """
     return text.replace('\uFE0F', '')
 
 
 def add_all_fe0f(emojis: List[str]):
-    '''
+    """
     Find all emoji sequence prefixes that can be followed by FE0F.
     Then, append FE0F to all prefixes that can but do not have it already.
     This emulates adraffy's trie building algorithm, which does not add FE0F nodes,
     but sets a "can be followed by FE0F" flag on the previous node.
-    '''
+    """
     cps_with_fe0f = set()
     for cps in emojis:
         for i in range(1, len(cps)):
@@ -297,14 +297,14 @@ def create_emoji_regex_pattern(emojis: List[str]) -> str:
     def make_emoji(emoji: str) -> str:
         # make FE0F optional
         return regex.escape(emoji).replace(fe0f, f'{fe0f}?')
-    # sort to match longest first
+    # sort to match the longest first
     return '|'.join(make_emoji(emoji) for emoji in sorted(emojis, key=len, reverse=True))
 
 
 def create_emoji_fe0f_lookup(emojis: List[str]) -> Dict[str, str]:
-    '''
+    """
     Create a lookup table for recreating FE0F emojis from non-FE0F emojis.
-    '''
+    """
     return {filter_fe0f(emoji): emoji for emoji in emojis}
 
 
@@ -349,7 +349,7 @@ def find_group_id(groups, name):
 
 
 def group_names_to_ids(groups, whole_map):
-    for k, v in whole_map.items():
+    for v in whole_map.values():
         if isinstance(v, dict):
             for k in v['M']:
                 for i in range(len(v['M'][k])):
@@ -386,9 +386,9 @@ NORMALIZATION = NormalizationData()
 
 
 def collapse_valid_tokens(tokens: List[Token]) -> List[Token]:
-    '''
+    """
     Combine cps from continuous valid tokens into single tokens.
-    '''
+    """
     out = []
     i = 0
     while i < len(tokens):
@@ -411,9 +411,9 @@ def cps_requires_check(cps: List[int]) -> bool:
 
 
 def normalize_tokens(tokens: List[Token]) -> List[Token]:
-    '''
+    """
     From https://github.com/adraffy/ens-normalize.js/blob/1571a7d226f564ac379a533a3b04a15977a0ae80/src/lib.js
-    '''
+    """
     i = 0
     start = -1
     while i < len(tokens):
@@ -512,7 +512,6 @@ def post_check_cm_leading_emoji(cps: List[int]) -> Optional[NormalizationError]:
 
 
 def make_fenced_error(cps: List[int], start: int, end: int) -> NormalizationError:
-    type_ = None
     suggested = ''
     if start == 0:
         type_ = NormalizationErrorType.NORM_ERR_FENCED_LEADING
@@ -561,11 +560,11 @@ def post_check_group_whole(cps: List[int], is_greek: List[bool]) -> Optional[Nor
     is_greek[0] = g['name'] == 'Greek'
     return (
         post_check_group(g, cps_no_fe0f, cps)
-        or post_check_whole(g, unique)
+        or post_check_whole(unique)
     )
 
 
-def determine_group(unique: List[int], cps: List[int]) -> Tuple[Optional[List[Dict]], Optional[NormalizationError]]:
+def determine_group(unique: Iterable[int], cps: List[int]) -> Tuple[Optional[List[Dict]], Optional[NormalizationError]]:
     groups = NORMALIZATION.groups
     for cp in unique:
         gs = [g for g in groups if cp in g['V']]
@@ -628,7 +627,7 @@ def post_check_group(g, cps: List[int], input: List[int]) -> Optional[Normalizat
             i += 1
 
 
-def post_check_whole(g, cps: List[int]) -> Optional[NormalizationError]:
+def post_check_whole(cps: Iterable[int]) -> Optional[NormalizationError]:
     # Cannot report error index, operating on unique codepoints.
     # Not reporting disallowed sequence, see below.
     maker = None
@@ -697,7 +696,6 @@ def find_normalization_warnings(tokens: List[Token]) -> List[NormalizationWarnin
     disallowed = None
     suggestion = None
     for tok in tokens:
-        scanned = None
         if tok.type == TY_MAPPED:
             warning = NormalizationWarningType.NORM_WARN_MAPPED
             disallowed = chr(tok.cp)
@@ -753,8 +751,8 @@ def tokens2beautified(tokens: List[Token], label_is_greek: List[bool]) -> str:
             continue
         label_end = i
 
-        for i in range(label_start, label_end):
-            tok = tokens[i]
+        for j in range(label_start, label_end):
+            tok = tokens[j]
             if tok.type in (TY_IGNORED, TY_DISALLOWED):
                 continue
             elif tok.type == TY_EMOJI:
@@ -767,7 +765,7 @@ def tokens2beautified(tokens: List[Token], label_is_greek: List[bool]) -> str:
                 else:
                     s.append(cps2str(tok.cps))
 
-        label_start = i + 1
+        label_start = i
         label_index += 1
 
     return ''.join(s)
@@ -778,7 +776,7 @@ def ens_process(input: str,
                 do_beautify: bool = False,
                 do_tokenize: bool = False,
                 do_warnings: bool = False) -> ENSProcessResult:
-    '''
+    """
     Used to compute `ens_normalize`, `ens_beautify`, `ens_tokenize` and `ens_warnings` in one go.
     
     Returns `ENSProcessResult` with the following fields:
@@ -787,7 +785,7 @@ def ens_process(input: str,
     - `tokens`: list of `Token` objects or `None` if `do_tokenize` is `False`
     - `error`: `NormalizationError` object or `None` if no error occurred (input can be normalized)
     - `warnings`: list of `NormalizationWarning` objects or `None` if `do_warnings` is `False`
-    '''
+    """
     tokens: List[Token] = []
     error = None
 
@@ -886,10 +884,10 @@ def ens_process(input: str,
 
 # TODO typing?
 def offset_err_start(err: Optional[NormalizationErrorBase], tokens: List[Token]) -> Optional[NormalizationErrorBase]:
-    '''
+    """
     Output of post_check() is not input aligned.
     This function offsets the error start to match the input characters.
-    '''
+    """
     if err is None or err.start is None:
         return err
     # index in string that was scanned
@@ -930,11 +928,11 @@ def offset_err_start(err: Optional[NormalizationErrorBase], tokens: List[Token])
 
 
 def ens_normalize(text: str) -> str:
-    '''
+    """
     Apply ENS normalization to a string.
     
     Raises NormalizationError if the input cannot be normalized.
-    '''
+    """
     res = ens_process(text, do_normalize=True)
     if res.error is not None:
         raise res.error
@@ -942,11 +940,11 @@ def ens_normalize(text: str) -> str:
 
 
 def ens_beautify(text: str) -> str:
-    '''
+    """
     Apply ENS normalization with beautification to a string.
     
     Raises NormalizationError if the input cannot be normalized.
-    '''
+    """
     res = ens_process(text, do_beautify=True)
     if res.error is not None:
         raise res.error
@@ -954,7 +952,7 @@ def ens_beautify(text: str) -> str:
 
 
 def ens_tokenize(input: str) -> List[Token]:
-    '''
+    """
     Tokenize a string using ENS normalization.
     
     Returns a list of tokens.
@@ -981,18 +979,18 @@ def ens_tokenize(input: str) -> List[Token]:
     - nfc
         - input: input codepoints
         - cps: output codepoints (after NFC normalization)
-    '''
+    """
     return ens_process(input, do_tokenize=True).tokens
 
 
 def ens_warnings(input: str) -> List[NormalizationWarning]:
-    '''
+    """
     This function returns a list of `NormalizationWarning` objects
     that describe the modifications applied by ENS normalization
     to the input string.
 
     Raises NormalizationError if the input cannot be normalized.
-    '''
+    """
     res = ens_process(input, do_warnings=True)
     if res.error is not None:
         raise res.error
@@ -1000,8 +998,8 @@ def ens_warnings(input: str) -> List[NormalizationWarning]:
 
 
 def is_ens_normalized(name: str) -> bool:
-    '''
+    """
     Checks if the input string is already ENS normalized
     (i.e. `ens_normalize(name) == name`).
-    '''
+    """
     return ens_process(name, do_normalize=True).normalized == name
