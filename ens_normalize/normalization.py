@@ -3,6 +3,8 @@ from enum import Enum
 import regex
 import json
 import os
+import pickle
+import pickletools
 from pyunormalize import NFC, NFD
 
 
@@ -359,6 +361,8 @@ def group_names_to_ids(groups, whole_map):
 
 
 class NormalizationData:
+    VERSION = 1
+
     def __init__(self):
         with open(SPEC_PATH) as f:
             spec = json.load(f)
@@ -381,8 +385,30 @@ class NormalizationData:
         self.emoji_fe0f_lookup = create_emoji_fe0f_lookup([''.join(chr(cp) for cp in cps) for cps in self.emoji])
         self.emoji_regex = regex.compile(create_emoji_regex_pattern([''.join(chr(cp) for cp in cps) for cps in self.emoji]))
 
+def load_normalization_data() -> NormalizationData:
+    """
+    Loads `NormalizationData` from cached pickle file if it exists, otherwise creates it.
+    Pickle is stored in `$HOME/.cache/ens_normalize/normalization_data.pkl`.
+    It contains a version number, so if the version changes, the pickle is recreated.
+    """
+    cache_dir = os.path.join(os.path.expanduser('~'), '.cache', 'ens_normalize')
+    os.makedirs(cache_dir, exist_ok=True)
+    cache_path = os.path.join(cache_dir, 'normalization_data.pkl')
+    if os.path.exists(cache_path):
+        with open(cache_path, 'rb') as f:
+            data: NormalizationData = pickle.load(f)
+            if data.VERSION == NormalizationData.VERSION:
+                return data
+    data = NormalizationData()
+    # Python >= 3.8 is required for protocol 5
+    buf = pickle.dumps(data, protocol=5)
+    buf = pickletools.optimize(buf)
+    with open(cache_path, 'wb') as f:
+        f.write(buf)
+    return data
 
-NORMALIZATION = NormalizationData()
+
+NORMALIZATION = load_normalization_data()
 
 
 def collapse_valid_tokens(tokens: List[Token]) -> List[Token]:
