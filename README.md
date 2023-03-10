@@ -70,15 +70,17 @@ except NormalizationError as e:
     #   Other errors might be found even after applying this suggestion.
 ```
 
-Normalize a name by removing disallowed characters:
+Some errors can be fixed automatically:
 
 ```python
-# input name with disallowed zero width joiner
+# input name with disallowed zero width joiner and '?'
 # str -> str
-ens_force_normalize('Ni‍ck.ETH')
+ens_force_normalize('Ni‍ck?.ETH')
 # 'nick.eth'
-# ZWJ removed, no error raised
+# ZWJ and '?' removed, no error raised
 # note: might still raise NormalizationError for certain names
+ens_force_normalize('abc..eth')
+# NormalizationError: Contains a disallowed empty label
 ```
 
 Format names with fully-qualified emoji:
