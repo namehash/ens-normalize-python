@@ -70,14 +70,18 @@ except NormalizationError as e:
     #   Other errors might be found even after applying this suggestion.
 ```
 
-Some errors can be fixed automatically:
+You can force the normalization of invalid names:
 
 ```python
 # input name with disallowed zero width joiner and '?'
 # str -> str
 ens_force_normalize('Ni‍ck?.ETH')
 # 'nick.eth'
-# ZWJ and '?' removed, no error raised
+# ZWJ and '?' are removed, no error is raised
+# note: ens_normalize() is preferred over ens_force_normalize()
+#       because ens_force_normalize() might destroy the input
+#       by removing too many characters
+
 # note: might still raise NormalizationError for certain names
 ens_force_normalize('abc..eth')
 # NormalizationError: Contains a disallowed empty label
