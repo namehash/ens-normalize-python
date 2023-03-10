@@ -210,6 +210,12 @@ be updated by running the following steps:
     npm start
     ```
 
+4. Update `NormalizationData.VERSION`:\
+   This library keeps cache files in `$HOME/.cache/ens_normalize` to speed up loading.
+   To make sure existing users regenerate their cache after a version update,
+   please increment the `NormalizationData.VERSION` constant in [normalization.py](/ens_normalize/normalization.py).
+   The first import of the new version will automatically regenerate the cache.
+
 ### Build and test
 
 Installs dependencies, runs validation tests and builds the wheel.

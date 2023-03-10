@@ -361,6 +361,9 @@ def group_names_to_ids(groups, whole_map):
 
 
 class NormalizationData:
+    # Increment VERSION when the spec changes
+    # or if the code in this class changes.
+    # It will force the cache to be regenerated.
     VERSION = 1
 
     def __init__(self):
