@@ -70,6 +70,17 @@ except NormalizationError as e:
     #   Other errors might be found even after applying this suggestion.
 ```
 
+Normalize a name by removing disallowed characters:
+
+```python
+# input name with disallowed zero width joiner
+# str -> str
+ens_force_normalize('Ni‍ck.ETH')
+# 'nick.eth'
+# ZWJ removed, no error raised
+# note: might still raise NormalizationError for certain names
+```
+
 Format names with fully-qualified emoji:
 
 ```python
