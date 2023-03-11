@@ -297,3 +297,20 @@ def test_normalization_error_object():
         assert e.details == NormalizationErrorType.NORM_ERR_UNDERSCORE.details
         assert str(e) == e.message
         assert repr(e) == 'NormalizationError(code=NORM_ERR_UNDERSCORE, modification="_"->"")'
+
+
+def test_ens_force_normalize():
+    assert ens_force_normalize('Ab') == 'ab'
+    assert ens_force_normalize('a_b') == 'ab'
+    assert ens_force_normalize('a\'\'b') == 'a’b'
+    assert ens_force_normalize('bitcoin.bitcοin.bi̇tcoin') == 'bitcoin.bitcin.bitcoin'
+    with pytest.raises(NormalizationError) as e:
+        ens_force_normalize('0x.0χ.0х')
+    assert e.value.type == NormalizationErrorType.NORM_ERR_CONF_WHOLE
+    with pytest.raises(NormalizationError) as e:
+        ens_force_normalize('?')
+    assert e.value.type == NormalizationErrorType.NORM_ERR_EMPTY
+    for name in ('abc.?', 'abc.?.xyz', '?.xyz', 'abc..?.xyz'):
+        with pytest.raises(NormalizationError) as e:
+            ens_force_normalize(name)
+        assert e.value.type == NormalizationErrorType.NORM_ERR_EMPTY
