@@ -55,7 +55,7 @@ class NormalizationErrorType(NormalizationErrorTypeBase):
 
     NORM_ERR_NSM_REPEATED = "Contains a repeated non-spacing mark", \
                             "Every contiguous sequence of non-spacing mark characters cannot contain more than one occurrence of the same character"
-    
+
     NORM_ERR_NSM_TOO_MANY = "Contains too many consecutive non-spacing marks", \
                             "Every contiguous sequence of non-spacing mark characters must contain no more than 4 characters"
 
@@ -74,7 +74,7 @@ class NormalizationErrorType(NormalizationErrorTypeBase):
 
     NORM_ERR_FENCED_MULTI   = "Contains a fenced character after another fenced character", \
                               "There are certain characters (fenced) which cannot directly follow another fenced character"
-                              
+
     NORM_ERR_FENCED_TRAILING = "Contains a fenced character at the end of a label", \
                                "There are certain characters (fenced) which cannot be the last character"
 
@@ -276,7 +276,7 @@ def add_all_fe0f(emojis: List[str]):
             if cps[i] == '\uFE0F':
                 # remember the entire prefix to simulate trie behavior
                 cps_with_fe0f.add(cps[:i])
-    
+
     emojis_out = []
 
     for cps_in in emojis:
@@ -807,7 +807,7 @@ def ens_process(input: str,
                 do_warnings: bool = False) -> ENSProcessResult:
     """
     Used to compute `ens_normalize`, `ens_beautify`, `ens_tokenize` and `ens_warnings` in one go.
-    
+
     Returns `ENSProcessResult` with the following fields:
     - `normalized`: normalized name or `None` if input cannot be normalized or `do_normalize` is `False`
     - `beautified`: beautified name or `None` if input cannot be normalized or `do_beautify` is `False`
@@ -959,7 +959,7 @@ def offset_err_start(err: Optional[NormalizationErrorBase], tokens: List[Token])
 def ens_normalize(text: str) -> str:
     """
     Apply ENS normalization to a string.
-    
+
     Raises NormalizationError if the input cannot be normalized.
     """
     res = ens_process(text, do_normalize=True)
@@ -968,10 +968,35 @@ def ens_normalize(text: str) -> str:
     return res.normalized
 
 
+def ens_force_normalize(text: str) -> str:
+    """
+    Apply ENS normalization to a string. If the result is not normalized then this function 
+    will try to make the input normalized by removing all disallowed characters.
+
+    Raises `NormalizationError` if:
+    - the force normalization process removes all characters from any label in the input
+    - the `NORM_ERR_CONF_WHOLE` error is found
+    """
+    while True:
+        try:
+            return ens_normalize(text)
+        except NormalizationError as e:
+            if e.type is NormalizationErrorType.NORM_ERR_EMPTY:
+                raise e
+            if e.start is not None and e.disallowed is not None and e.suggested is not None:
+                new_text = text[:e.start] + e.suggested + text[e.start + len(e.disallowed):]
+                if new_text == text:
+                    # protect against infinite loops
+                    raise e
+                text = new_text
+            else:
+                raise e
+
+
 def ens_beautify(text: str) -> str:
     """
     Apply ENS normalization with beautification to a string.
-    
+
     Raises NormalizationError if the input cannot be normalized.
     """
     res = ens_process(text, do_beautify=True)
@@ -983,12 +1008,12 @@ def ens_beautify(text: str) -> str:
 def ens_tokenize(input: str) -> List[Token]:
     """
     Tokenize a string using ENS normalization.
-    
+
     Returns a list of tokens.
 
     Each token contains a `type` field and other fields depending on the type.
     All codepoints are represented as integers.
-    
+
     Token types and their fields:
     - valid
         - cps: list of codepoints
