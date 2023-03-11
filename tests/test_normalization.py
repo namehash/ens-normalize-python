@@ -2,6 +2,7 @@ import pytest
 import json
 import os
 from ens_normalize import *
+import ens_normalize as ens_normalize_module
 
 
 TESTS_PATH = os.path.join(os.path.dirname(__file__), 'ens-normalize-tests.json')
@@ -297,6 +298,16 @@ def test_normalization_error_object():
         assert e.details == NormalizationErrorType.NORM_ERR_UNDERSCORE.details
         assert str(e) == e.message
         assert repr(e) == 'NormalizationError(code=NORM_ERR_UNDERSCORE, modification="_"->"")'
+
+
+def test_pickle_cache():
+    pickle_path = os.path.join(os.path.expanduser('~'), '.cache', 'ens_normalize', 'normalization_data.pkl')
+    if os.path.exists(pickle_path):
+        os.remove(pickle_path)
+    # initial load
+    ens_normalize_module.normalization.load_normalization_data()
+    # load from cache
+    ens_normalize_module.normalization.load_normalization_data()
 
 
 def test_ens_force_normalize():
