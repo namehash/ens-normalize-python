@@ -27,36 +27,36 @@ Normalize an ENS name:
 
 ```python
 # str -> str
-# raises NormalizationError for invalid names
+# raises InvalidLabelError for invalid names according to the ENS Name Normalization Standard
 # output ready for namehash
 ens_normalize('Nick.ETH')
 # 'nick.eth'
 # note: does not enforce .eth TLD 3-character minimum
 ```
 
-Catch normalization errors:
+Catch invalid names:
 
 ```python
 # added a hidden "zero width joiner" character
 try:
     ens_normalize('Ni‍ck.ETH')
 # Catch the first normalization error encountered (there might be more).
-except NormalizationError as e:
+except InvalidLabelError as e:
     # error code
     print(e.code)
-    # NORM_ERR_INVISIBLE
+    # INVISIBLE
     
-    # a general message
-    print(e.message)
+    # a message about why the input is invalid
+    print(e.general_info)
     # Contains a disallowed invisible character
     
-    # start index of the disallowed substring in the input string
-    print(e.start)
+    # starting index of the disallowed substring in the input string
+    print(e.index)
     # 2
     
     # Other useful fields:
-    # - e.details: str
-    #   A description of the error message.
+    # - e.disallowed_sequence_info: str
+    #   A message about the disallowed sequence.
     #
     # - e.disallowed: str
     #   A substring containing the disallowed sequence,
@@ -122,15 +122,15 @@ Find out how the input was modified during normalization:
 ```python
 # Returns a list of modifications (substring -> string)
 # that have been applied to the input during normalization.
-# Has the same fields as NormalizationError:
+# Has the same fields as InvalidLabelError:
 # - code
-# - message
-# - details
+# - general_info
+# - disallowed_sequence_info
 # - disallowed
 # - suggested
-ens_warnings('Nàme🧙‍♂️')
-# [NormalizationWarning(code=NORM_WARN_MAPPED, modification="N"->"n"),
-#  NormalizationWarning(code=NORM_WARN_FE0F, modification="🧙‍♂️"->"🧙‍♂")]
+ens_transformations('Nàme🧙‍♂️')
+# [NormalizationTransformation(code=MAPPED, modification="N"->"n"),
+#  NormalizationTransformation(code=FE0F, modification="🧙‍♂️"->"🧙‍♂")]
 ```
 
 A typical normalization workflow:
@@ -143,12 +143,12 @@ try:
     # Normalized: nàme🧙‍♂
     # Success!
     # Let's check how the input was changed:
-    for w in ens_warnings(name):
+    for w in ens_transformations(name):
         print(repr(w)) # use repr() to print more information
-    # NormalizationWarning(code=NORM_WARN_MAPPED, modification="N"->"n")
-    # NormalizationWarning(code=NORM_WARN_FE0F, modification="🧙‍♂️"->"🧙‍♂")
-    #                        invisible character inside emoji ^
-except NormalizationError as e:
+    # NormalizationTransformation(code=MAPPED, modification="N"->"n")
+    # NormalizationTransformation(code=FE0F, modification="🧙‍♂️"->"🧙‍♂")
+    #                     invisible character inside emoji ^
+except InvalidLabelError as e:
     # Even if the label cannot be normalized
     # we can still suggest a fix.
     print('Error:', e)
@@ -163,49 +163,49 @@ ens_process("Nàme🧙‍♂️1⃣",
     do_normalize=True,
     do_beautify=True,
     do_tokenize=True,
-    do_warnings=True,
+    do_transformations=True,
 )
 # ENSProcessResult(
 #   normalized='nàme🧙\u200d♂1⃣',
 #   beautified='nàme🧙\u200d♂️1️⃣',
 #   tokens=[...],
-#   error=None, # <- this is the exception object thrown by other functions
-#   warnings=[
-#     NormalizationWarning(code=NORM_WARN_MAPPED, modification="N"->"n"),
-#     NormalizationWarning(code=NORM_WARN_FE0F, modification="🧙‍♂️"->"🧙‍♂")
+#   invalid_label_error=None, <- this is the exception raised by ens_normalize()
+#   transformations=[
+#     NormalizationTransformation(code=MAPPED, modification="N"->"n"),
+#     NormalizationTransformation(code=FE0F, modification="🧙‍♂️"->"🧙‍♂")
 #   ])
 ```
 
-## List of all reported normalization errors
+## List of all normalization errors
 
 For some errors it is not possible to show a substring of the input which caused
-the error. For these errors (see 3rd table column) the `start`, `disallowed` and `suggested` fields will be `None`.
+the error. For these errors (see 3rd table column) the `index`, `disallowed` and `suggested` fields will be `None`.
 
-| `NormalizationErrorType` | Description | Modified substring reported by `ens_warnings` |
+| `InvalidLabelErrorType` | Description | Disallowed substring reported |
 | ---------- | ----------- | --------------- |
-| `NORM_ERR_UNDERSCORE` | Contains an underscore in a disallowed position | ✅ |
-| `NORM_ERR_HYPHEN`     | Contains the sequence '--' in a disallowed position | ✅ |
-| `NORM_ERR_EMPTY`      | Contains a disallowed empty label | ✅ |
-| `NORM_ERR_CM_START`   | Contains a combining mark in a disallowed position at the start of the label | ✅ |
-| `NORM_ERR_CM_EMOJI`   | Contains a combining mark in a disallowed position after an emoji | ✅ |
-| `NORM_ERR_NSM_REPEATED` | Contains a repeated non-spacing mark | ❌ |
-| `NORM_ERR_NSM_TOO_MANY` | Contains too many consecutive non-spacing marks | ❌ |
-| `NORM_ERR_DISALLOWED` | Contains a disallowed character | ✅ |
-| `NORM_ERR_INVISIBLE`  | Contains a disallowed invisible character | ✅ |
-| `NORM_ERR_FENCED_LEADING`  | Contains a disallowed character at the start of a label | ✅ |
-| `NORM_ERR_FENCED_MULTI`    | Contains a disallowed sequence of 2 characters | ✅ |
-| `NORM_ERR_FENCED_TRAILING` | Contains a disallowed character at the end of a label | ✅ |
-| `NORM_ERR_CONF_WHOLE` | This label can be visually confusing | ❌ |
-| `NORM_ERR_CONF_MIXED` | This label contains characters from different scripts which look confusing | ✅ |
+| `UNDERSCORE` | Contains an underscore in a disallowed position | ✅ |
+| `HYPHEN`     | Contains the sequence '--' in a disallowed position | ✅ |
+| `EMPTY`      | Contains a disallowed empty label | ✅ |
+| `CM_START`   | Contains a combining mark in a disallowed position at the start of the label | ✅ |
+| `CM_EMOJI`   | Contains a combining mark in a disallowed position after an emoji | ✅ |
+| `NSM_REPEATED` | Contains a repeated non-spacing mark | ❌ |
+| `NSM_TOO_MANY` | Contains too many consecutive non-spacing marks | ❌ |
+| `DISALLOWED` | Contains a disallowed character | ✅ |
+| `INVISIBLE`  | Contains a disallowed invisible character | ✅ |
+| `FENCED_LEADING`  | Contains a disallowed character at the start of a label | ✅ |
+| `FENCED_MULTI`    | Contains a disallowed sequence of 2 characters | ✅ |
+| `FENCED_TRAILING` | Contains a disallowed character at the end of a label | ✅ |
+| `CONF_WHOLE` | This label can be visually confusing | ❌ |
+| `CONF_MIXED` | This label contains characters from different scripts which look confusing | ✅ |
 
 ## List of all reported normalization warnings
 
-| `NormalizationWarningType` | Description | Modified substring reported by `ens_warnings` |
+| `NormalizationTransformationType` | Description | Disallowed substring reported |
 | ---------- | ----------- | --------------- |
-| `NORM_ERR_IGNORED`    | Contains a disallowed character that is ignored during normalization | ✅ |
-| `NORM_ERR_MAPPED`     | Contains a disallowed character that is changed (mapped) to another sequence during normalization | ✅ |
-| `NORM_ERR_FE0F`       | Contains a disallowed invisible character inside an emoji | ✅ |
-| `NORM_ERR_NFC`        | Contains a disallowed sequence that is not "NFC normalized" into canonical form | ✅ |
+| `IGNORED`    | Contains a disallowed character that is ignored during normalization | ✅ |
+| `MAPPED`     | Contains a disallowed character that is changed (mapped) to another sequence during normalization | ✅ |
+| `FE0F`       | Contains a disallowed invisible character inside an emoji | ✅ |
+| `NFC`        | Contains a disallowed sequence that is not "NFC normalized" into canonical form | ✅ |
 
 ## Develop
 
