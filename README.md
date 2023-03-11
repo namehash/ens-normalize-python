@@ -6,8 +6,8 @@
 
 * Python implementation of the [ENS Name Normalization Standard](https://github.com/adraffy/ensip-norm/blob/main/draft.md).
   Thanks to [Adraffy](https://github.com/adraffy) for his leadership in coordinating the definition of this standard.
-* Passes **100%** of the [official validation tests](https://github.com/adraffy/ens-normalize.js/tree/main/validate) (validated automatically with pytest, see below) and code testing coverage.
-* Passes an [additional suite of further tests](/tools/updater/update-ens.js#L54) for compatibility with the official [Javascript reference implementation](https://github.com/adraffy/ens-normalize.js).
+* Passes **100%** of the [official validation tests](https://github.com/adraffy/ens-normalize.js/tree/main/validate) (validated automatically with pytest, see below).
+* Passes an [additional suite of further tests](/tools/updater/update-ens.js#L54) for compatibility with the official [Javascript reference implementation](https://github.com/adraffy/ens-normalize.js) and code testing coverage.
 * Based on [JavaScript implementation version 1.9.0](https://github.com/adraffy/ens-normalize.js/tree/4873fbe6393e970e186ab57860cc59cbbb1fa162).
 
 ## Usage
@@ -51,24 +51,28 @@ except DisallowedLabelError as e:
     print(e.general_info)
     # Contains a disallowed invisible character
     
-    # starting index of the disallowed substring in the input string (counting in Unicode code points)
+    # starting index of the disallowed substring in the input string
+    # (counting in Unicode code points)
     print(e.index)
     # 2
-    
-    # Other useful fields:
-    # - e.disallowed_sequence_info: str
-    #   A message about the disallowed sequence.
-    #
-    # - e.disallowed: str
-    #   A substring containing the disallowed sequence,
-    #   '\200D' (zero width joiner) in this case.
-    #
-    # - e.suggested: str
-    #   You may be able to fix this error by replacing e.disallowed
-    #   with e.suggested in the input string.
-    #   In this case this field is '' (empty string).
-    #   It means that the disallowed sequence has to be removed.
-    #   Other errors might be found even after applying this suggestion.
+
+    # information about the disallowed substring
+    print(e.disallowed_sequence_info)
+    # 'This invisible character is disallowed'
+
+    # the disallowed substring
+    # (use repr() to "see" the invisible character)
+    print(repr(e.disallowed))
+    # '\u200d'
+
+    # a suggestion for fixing the error
+    print(repr(e.suggested))
+    # ''
+    # empty string means that the disallowed substring has to be removed
+
+    # You may be able to fix this error by replacing e.disallowed
+    # with e.suggested in the input string.
+    # Other errors might be found even after applying this suggestion.
 ```
 
 You can force the normalization of invalid names:
@@ -83,9 +87,9 @@ ens_force_normalize('Ni‍ck?.ETH')
 #       because ens_force_normalize() might destroy the input
 #       by removing too many characters
 
-# note: might still raise NormalizationError for certain names, which can't be force normalized
+# note: might still raise DisallowedLabelError for certain names, which can't be force normalized
 ens_force_normalize('abc..eth')
-# NormalizationError: Contains a disallowed empty label
+# DisallowedLabelError: Contains a disallowed empty label
 ```
 
 Format names with fully-qualified emoji:
@@ -125,10 +129,11 @@ For a valid name, you can find out how the input was modified during normalizati
 ```python
 # Returns a list of transformations (substring -> string)
 # that have been applied to the input during normalization.
-# Has the same fields as DisallowedLabelError:
+# NormalizationTransformation has the same fields as DisallowedLabelError:
 # - code
 # - general_info
 # - disallowed_sequence_info
+# - index
 # - disallowed
 # - suggested
 ens_transformations('Nàme🧙‍♂️.eth')
@@ -184,8 +189,8 @@ ens_process("Nàme🧙‍♂️1⃣.eth",
 
 ## List of all `DisallowedLabelError` types
 
-For some errors it is not possible to show a substring of the input which caused
-the error. For these errors (see 3rd table column) the `index`, `disallowed` and `suggested` fields will be `None`.
+For some errors it is difficult to find the substring of the input which caused the error.
+For these errors (see 3rd table column) the `index`, `disallowed_sequence_info`, `disallowed` and `suggested` fields will be `None`.
 
 | `DisallowedLabelErrorType` | General info | Disallowed substring reported |
 | ---------- | ----------- | --------------- |
