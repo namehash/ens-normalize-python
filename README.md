@@ -204,14 +204,14 @@ the error. For these errors (see 3rd table column) the `index`, `disallowed` and
 | `CONF_WHOLE` | Contains visually confusing characters that are disallowed | ❌ |
 | `CONF_MIXED` | Contains visually confusing characters from different scripts that are disallowed | ✅ |
 
-## List of all reported normalization warnings
+## List of all normalization transformations
 
-| `NormalizationTransformationType` | Description | Disallowed substring reported |
+| `NormalizationTransformationType` | General info | Disallowed substring reported |
 | ---------- | ----------- | --------------- |
-| `IGNORED`    | Contains disallowed \"ignored\" characters that have been automatically removed | ✅ |
-| `MAPPED`     | Contains a disallowed character that has been automatically replaced by a normalized sequence | ✅ |
-| `FE0F`       | Contains a disallowed invisible character inside an emoji | ✅ |
-| `NFC`        | Contains a disallowed sequence that is not \"NFC normalized\" into canonical form | ✅ |
+| `IGNORED`    | Contains disallowed "ignored" characters that have been removed | ✅ |
+| `MAPPED`     | Contains a disallowed character that has been replaced by a normalized sequence | ✅ |
+| `FE0F`       | Contains a disallowed variant of an emoji which has been replaced by an equivalent normalized emoji | ✅ |
+| `NFC`        | Contains a disallowed sequence that is not "NFC normalized" which has been replaced by an equivalent normalized sequence | ✅ |
 
 ## Develop
 

@@ -92,16 +92,16 @@ class NormalizationTransformationType(NormalizationMessageTypeBase):
     The label is allowed but contains a sequence which has been automatically transformed into a normalized form.
     """
 
-    IGNORED   = "Contains disallowed \"ignored\" characters that have been automatically removed", \
+    IGNORED   = "Contains disallowed \"ignored\" characters that have been removed", \
                 "This character is ignored during normalization and has been automatically removed"
 
-    MAPPED    = "Contains a disallowed character that has been automatically replaced by a normalized sequence", \
+    MAPPED    = "Contains a disallowed character that has been replaced by a normalized sequence", \
                 "This character is disallowed and has been automatically replaced by a normalized sequence"
 
-    FE0F      = "Contains a disallowed invisible character inside an emoji", \
+    FE0F      = "Contains a disallowed variant of an emoji which has been replaced by an equivalent normalized emoji", \
                 "This emoji has been automatically fixed to remove an invisible character"
 
-    NFC       = "Contains a disallowed sequence that is not \"NFC normalized\" into canonical form", \
+    NFC       = "Contains a disallowed sequence that is not \"NFC normalized\" which has been replaced by an equivalent normalized sequence", \
                 "This sequence has been automatically normalized into NFC canonical form"
 
 
@@ -805,7 +805,7 @@ def ens_process(input: str,
     - `normalized`: normalized name or `None` if input cannot be normalized or `do_normalize` is `False`
     - `beautified`: beautified name or `None` if input cannot be normalized or `do_beautify` is `False`
     - `tokens`: list of `Token` objects or `None` if `do_tokenize` is `False`
-    - `invalid_label_error`: `DisallowedLabelError` object or `None` if input was normalized
+    - `disallowed_label_error`: `DisallowedLabelError` object or `None` if input was normalized
     - `transformations`: list of `NormalizationTransformation` objects or `None` if `do_transformations` is `False`
     """
     tokens: List[Token] = []
