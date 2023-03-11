@@ -38,7 +38,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        pytest -vv --cov=ens_normalize tests/
+        pytest -vv --cov-report term-missing --cov=ens_normalize tests/
     - name: Coverage
       if: github.ref == 'refs/heads/main'
       run: coverage-badge -f -o coverage_badge.svg
