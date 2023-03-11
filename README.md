@@ -82,7 +82,7 @@ ens_force_normalize('Ni‍ck?.ETH')
 #       because ens_force_normalize() might destroy the input
 #       by removing too many characters
 
-# note: might still raise NormalizationError for certain names
+# note: might still raise NormalizationError for certain names, which can't be force normalized
 ens_force_normalize('abc..eth')
 # NormalizationError: Contains a disallowed empty label
 ```
