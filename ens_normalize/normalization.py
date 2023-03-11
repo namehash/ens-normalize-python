@@ -27,9 +27,9 @@ class NormalizationMessageTypeBase(Enum):
         return self.name
 
 
-class InvalidLabelErrorType(NormalizationMessageTypeBase):
+class DisallowedLabelErrorType(NormalizationMessageTypeBase):
     """
-    The label is invalid and cannot be normalized.
+    The label is disallowed and cannot be normalized.
     """
 
     # GENERIC ----------------
@@ -89,7 +89,7 @@ class InvalidLabelErrorType(NormalizationMessageTypeBase):
 
 class NormalizationTransformationType(NormalizationMessageTypeBase):
     """
-    The label is valid but contains a sequence which has been automatically transformed into a normalized form.
+    The label is allowed but contains a sequence which has been automatically transformed into a normalized form.
     """
 
     IGNORED   = "Contains disallowed \"ignored\" characters that have been automatically removed", \
@@ -107,7 +107,7 @@ class NormalizationTransformationType(NormalizationMessageTypeBase):
 
 class NormalizationMessageBase:
     def __init__(self,
-                 type: Union[InvalidLabelErrorType, NormalizationTransformationType],
+                 type: Union[DisallowedLabelErrorType, NormalizationTransformationType],
                  index: Optional[int],
                  disallowed: Optional[str],
                  suggested: Optional[str]):
@@ -117,7 +117,7 @@ class NormalizationMessageBase:
         self.suggested = suggested
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}(code={self.type.code}, modification="{self.disallowed}"->"{self.suggested}")'
+        return f'{self.__class__.__name__}(code="{self.type.code}", index={self.index}, disallowed="{self.disallowed}", suggested="{self.suggested}")'
 
     def __str__(self) -> str:
         return self.general_info
@@ -150,9 +150,9 @@ class NormalizationMessageBase:
         )
 
 
-class InvalidLabelError(NormalizationMessageBase, Exception):
-    def __init__(self, type: InvalidLabelErrorType, index: Optional[int], disallowed: Optional[str], suggested: Optional[str]):
-        super(InvalidLabelError, self).__init__(type, index, disallowed, suggested)
+class DisallowedLabelError(NormalizationMessageBase, Exception):
+    def __init__(self, type: DisallowedLabelErrorType, index: Optional[int], disallowed: Optional[str], suggested: Optional[str]):
+        super(DisallowedLabelError, self).__init__(type, index, disallowed, suggested)
         super(Exception, self).__init__(self.general_info)
         self.type = type
 
@@ -235,7 +235,7 @@ class ENSProcessResult(NamedTuple):
     normalized: Optional[str]
     beautified: Optional[str]
     tokens: Optional[List[Token]]
-    invalid_label_error: Optional[InvalidLabelError]
+    disallowed_label_error: Optional[DisallowedLabelError]
     transformations: Optional[List[NormalizationTransformation]]
 
 
@@ -477,17 +477,17 @@ def normalize_tokens(tokens: List[Token]) -> List[Token]:
     return collapse_valid_tokens(tokens)
 
 
-def post_check_null_label(label: str) -> Optional[InvalidLabelError]:
+def post_check_null_label(label: str) -> Optional[DisallowedLabelError]:
     if len(label) == 0:
-        return InvalidLabelError(
-            InvalidLabelErrorType.EMPTY,
+        return DisallowedLabelError(
+            DisallowedLabelErrorType.EMPTY,
             index=0,
             disallowed='',
             suggested='',
         )
 
 
-def post_check_underscore(label: str) -> Optional[InvalidLabelError]:
+def post_check_underscore(label: str) -> Optional[DisallowedLabelError]:
     in_middle = False
     for i, c in enumerate(label):
         if c != '_':
@@ -496,30 +496,30 @@ def post_check_underscore(label: str) -> Optional[InvalidLabelError]:
             cnt = 1
             while i + cnt < len(label) and label[i + cnt] == '_':
                 cnt += 1
-            return InvalidLabelError(
-                InvalidLabelErrorType.UNDERSCORE,
+            return DisallowedLabelError(
+                DisallowedLabelErrorType.UNDERSCORE,
                 index=i,
                 disallowed='_' * cnt,
                 suggested='',
             )
 
 
-def post_check_hyphen(label: str) -> Optional[InvalidLabelError]:
+def post_check_hyphen(label: str) -> Optional[DisallowedLabelError]:
     if len(label) >= 4 and all(ord(cp) < 0x80 for cp in label) and '-' == label[2] == label[3]:
-        return InvalidLabelError(
-            InvalidLabelErrorType.HYPHEN,
+        return DisallowedLabelError(
+            DisallowedLabelErrorType.HYPHEN,
             index=2,
             disallowed='--',
             suggested='',
         )
 
 
-def post_check_cm_leading_emoji(cps: List[int]) -> Optional[InvalidLabelError]:
+def post_check_cm_leading_emoji(cps: List[int]) -> Optional[DisallowedLabelError]:
     for i in range(len(cps)):
         if cps[i] in NORMALIZATION.cm:
             if i == 0:
-                return InvalidLabelError(
-                    InvalidLabelErrorType.CM_START,
+                return DisallowedLabelError(
+                    DisallowedLabelErrorType.CM_START,
                     index=i,
                     disallowed=chr(cps[i]),
                     suggested='',
@@ -528,8 +528,8 @@ def post_check_cm_leading_emoji(cps: List[int]) -> Optional[InvalidLabelError]:
                 prev = cps[i - 1]
                 # emojis were replaced with FE0F
                 if prev == CP_FE0F:
-                    return InvalidLabelError(
-                        InvalidLabelErrorType.CM_EMOJI,
+                    return DisallowedLabelError(
+                        DisallowedLabelErrorType.CM_EMOJI,
                         # we cannot report the emoji because it was replaced with FE0F
                         index=i,
                         disallowed=chr(cps[i]),
@@ -537,16 +537,16 @@ def post_check_cm_leading_emoji(cps: List[int]) -> Optional[InvalidLabelError]:
                     )
 
 
-def make_fenced_error(cps: List[int], start: int, end: int) -> InvalidLabelError:
+def make_fenced_error(cps: List[int], start: int, end: int) -> DisallowedLabelError:
     suggested = ''
     if start == 0:
-        type_ = InvalidLabelErrorType.FENCED_LEADING
+        type_ = DisallowedLabelErrorType.FENCED_LEADING
     elif end == len(cps):
-        type_ = InvalidLabelErrorType.FENCED_TRAILING
+        type_ = DisallowedLabelErrorType.FENCED_TRAILING
     else:
-        type_ = InvalidLabelErrorType.FENCED_MULTI
+        type_ = DisallowedLabelErrorType.FENCED_MULTI
         suggested = chr(cps[start])
-    return InvalidLabelError(
+    return DisallowedLabelError(
         type_,
         index=start,
         disallowed=''.join(map(chr, cps[start:end])),
@@ -554,7 +554,7 @@ def make_fenced_error(cps: List[int], start: int, end: int) -> InvalidLabelError
     )
 
 
-def post_check_fenced(cps: List[int]) -> Optional[InvalidLabelError]:
+def post_check_fenced(cps: List[int]) -> Optional[DisallowedLabelError]:
     cp = cps[0]
     prev = NORMALIZATION.fenced.get(cp)
     if prev is not None:
@@ -574,7 +574,7 @@ def post_check_fenced(cps: List[int]) -> Optional[InvalidLabelError]:
         return make_fenced_error(cps, n - 1, n)
 
 
-def post_check_group_whole(cps: List[int], is_greek: List[bool]) -> Optional[InvalidLabelError]:
+def post_check_group_whole(cps: List[int], is_greek: List[bool]) -> Optional[DisallowedLabelError]:
     cps_no_fe0f = [cp for cp in cps if cp != CP_FE0F]
     unique = set(cps_no_fe0f)
     # we pass cps with fe0f to align error position with the original input
@@ -590,21 +590,21 @@ def post_check_group_whole(cps: List[int], is_greek: List[bool]) -> Optional[Inv
     )
 
 
-def determine_group(unique: Iterable[int], cps: List[int]) -> Tuple[Optional[List[Dict]], Optional[InvalidLabelError]]:
+def determine_group(unique: Iterable[int], cps: List[int]) -> Tuple[Optional[List[Dict]], Optional[DisallowedLabelError]]:
     groups = NORMALIZATION.groups
     for cp in unique:
         gs = [g for g in groups if cp in g['V']]
         if len(gs) == 0:
             if groups == NORMALIZATION.groups:
-                return None, InvalidLabelError(
-                    InvalidLabelErrorType.DISALLOWED,
+                return None, DisallowedLabelError(
+                    DisallowedLabelErrorType.DISALLOWED,
                     index=cps.index(cp),
                     disallowed=chr(cp),
                     suggested='',
                 )
             else:
-                return None, InvalidLabelError(
-                    InvalidLabelErrorType.CONF_MIXED,
+                return None, DisallowedLabelError(
+                    DisallowedLabelErrorType.CONF_MIXED,
                     index=cps.index(cp),
                     disallowed=chr(cp),
                     suggested='',
@@ -615,12 +615,12 @@ def determine_group(unique: Iterable[int], cps: List[int]) -> Tuple[Optional[Lis
     return groups, None
 
 
-def post_check_group(g, cps: List[int], input: List[int]) -> Optional[InvalidLabelError]:
+def post_check_group(g, cps: List[int], input: List[int]) -> Optional[DisallowedLabelError]:
     v, m = g['V'], g['M']
     for cp in cps:
         if cp not in v:
-            return InvalidLabelError(
-                InvalidLabelErrorType.CONF_MIXED,
+            return DisallowedLabelError(
+                DisallowedLabelErrorType.CONF_MIXED,
                 index=input.index(cp),
                 disallowed=chr(cp),
                 suggested='',
@@ -634,16 +634,16 @@ def post_check_group(g, cps: List[int], input: List[int]) -> Optional[InvalidLab
                 j = i + 1
                 while j < e and decomposed[j] in NORMALIZATION.nsm:
                     if j - i + 1 > NORMALIZATION.nsm_max:
-                        return InvalidLabelError(
-                            InvalidLabelErrorType.NSM_TOO_MANY,
+                        return DisallowedLabelError(
+                            DisallowedLabelErrorType.NSM_TOO_MANY,
                             index=None,
                             disallowed=None,
                             suggested=None,
                         )
                     for k in range(i, j):
                         if decomposed[k] == decomposed[j]:
-                            return InvalidLabelError(
-                                InvalidLabelErrorType.NSM_REPEATED,
+                            return DisallowedLabelError(
+                                DisallowedLabelErrorType.NSM_REPEATED,
                                 index=None,
                                 disallowed=None,
                                 suggested=None,
@@ -653,7 +653,7 @@ def post_check_group(g, cps: List[int], input: List[int]) -> Optional[InvalidLab
             i += 1
 
 
-def post_check_whole(cps: Iterable[int]) -> Optional[InvalidLabelError]:
+def post_check_whole(cps: Iterable[int]) -> Optional[DisallowedLabelError]:
     # Cannot report error index, operating on unique codepoints.
     # Not reporting disallowed sequence, see below.
     maker = None
@@ -676,8 +676,8 @@ def post_check_whole(cps: Iterable[int]) -> Optional[InvalidLabelError]:
         for g_ind in maker:
             g = NORMALIZATION.groups[g_ind]
             if all(cp in g['V'] for cp in shared):
-                return InvalidLabelError(
-                    InvalidLabelErrorType.CONF_WHOLE,
+                return DisallowedLabelError(
+                    DisallowedLabelErrorType.CONF_WHOLE,
                     index=None,
                     # could sometimes return shared[0] but shared can be empty
                     disallowed=None,
@@ -685,7 +685,7 @@ def post_check_whole(cps: Iterable[int]) -> Optional[InvalidLabelError]:
                 )
 
 
-def post_check(name: str, label_is_greek: List[bool]) -> Optional[InvalidLabelError]:
+def post_check(name: str, label_is_greek: List[bool]) -> Optional[DisallowedLabelError]:
     # name has emojis replaced with a single FE0F
     label_offset = 0
     for label in name.split('.'):
@@ -703,13 +703,9 @@ def post_check(name: str, label_is_greek: List[bool]) -> Optional[InvalidLabelEr
         # was this label greek?
         label_is_greek.append(is_greek[0])
         if e is not None:
-            return InvalidLabelError(
-                e.type,
-                # post_checks are called on a single label and need an offset
-                index=label_offset + e.index if e.index is not None else None,
-                disallowed=e.disallowed,
-                suggested=e.suggested,
-            )
+            # post_checks are called on a single label and need an offset
+            e.index = label_offset + e.index if e.index is not None else None
+            return e
         label_offset += len(label) + 1
 
     return None
@@ -803,13 +799,13 @@ def ens_process(input: str,
                 do_tokenize: bool = False,
                 do_transformations: bool = False) -> ENSProcessResult:
     """
-    Used to compute `ens_normalize`, `ens_beautify`, `ens_tokenize` and `ens_warnings` in one go.
+    Used to compute `ens_normalize`, `ens_beautify`, `ens_tokenize` and `ens_transformations` in one go.
 
     Returns `ENSProcessResult` with the following fields:
     - `normalized`: normalized name or `None` if input cannot be normalized or `do_normalize` is `False`
     - `beautified`: beautified name or `None` if input cannot be normalized or `do_beautify` is `False`
     - `tokens`: list of `Token` objects or `None` if `do_tokenize` is `False`
-    - `invalid_label_error`: `InvalidLabelError` object or `None` if no error occurred (input can be normalized)
+    - `invalid_label_error`: `DisallowedLabelError` object or `None` if input was normalized
     - `transformations`: list of `NormalizationTransformation` objects or `None` if `do_transformations` is `False`
     """
     tokens: List[Token] = []
@@ -871,10 +867,10 @@ def ens_process(input: str,
             ))
             continue
 
-        error = error or InvalidLabelError(
-            InvalidLabelErrorType.INVISIBLE
+        error = error or DisallowedLabelError(
+            DisallowedLabelErrorType.INVISIBLE
             if c in ('\u200d', '\u200c')
-            else InvalidLabelErrorType.DISALLOWED,
+            else DisallowedLabelErrorType.DISALLOWED,
             index=input_cur - 1,
             disallowed=c,
             suggested='',
@@ -888,12 +884,14 @@ def ens_process(input: str,
 
     transformations = find_normalization_transformations(tokens) if do_transformations else None
 
-    # run post checks
-    emojis_as_fe0f = ''.join(tokens2str(tokens, lambda _: '\uFE0F'))
-    # true for each label that is greek
-    # will be set by post_check()
-    label_is_greek = []
-    error = error or offset_err_start(post_check(emojis_as_fe0f, label_is_greek), tokens)
+    if error is None:
+        # run post checks
+        emojis_as_fe0f = ''.join(tokens2str(tokens, lambda _: '\uFE0F'))
+        # true for each label that is greek
+        # will be set by post_check()
+        label_is_greek = []
+        error = post_check(emojis_as_fe0f, label_is_greek)
+        offset_err_start(error, tokens)
 
     if error is not None:
         normalized = None
@@ -908,14 +906,13 @@ def ens_process(input: str,
     return ENSProcessResult(normalized, beautified, tokens, error, transformations)
 
 
-# TODO typing?
-def offset_err_start(err: Optional[Union[InvalidLabelError, NormalizationTransformation]], tokens: List[Token]) -> Optional[Union[InvalidLabelError, NormalizationTransformation]]:
+def offset_err_start(err: Optional[Union[DisallowedLabelError, NormalizationTransformation]], tokens: List[Token]):
     """
     Output of post_check() is not input aligned.
-    This function offsets the error start to match the input characters.
+    This function offsets the error index (in-place) to match the input characters.
     """
     if err is None or err.index is None:
-        return err
+        return
     # index in string that was scanned
     i = 0
     # offset between input and scanned
@@ -945,23 +942,18 @@ def offset_err_start(err: Optional[Union[InvalidLabelError, NormalizationTransfo
         else:
             # input: cps, scanned: cps
             i += len(tok.cps)
-    return err.__class__(
-        err.type,
-        index=err.index + offset,
-        disallowed=err.disallowed,
-        suggested=err.suggested,
-    )
+    err.index += offset
 
 
 def ens_normalize(text: str) -> str:
     """
     Apply ENS normalization to a string.
 
-    Raises InvalidLabelError if the input cannot be normalized.
+    Raises DisallowedLabelError if the input cannot be normalized.
     """
     res = ens_process(text, do_normalize=True)
-    if res.invalid_label_error is not None:
-        raise res.invalid_label_error
+    if res.disallowed_label_error is not None:
+        raise res.disallowed_label_error
     return res.normalized
 
 
@@ -970,15 +962,15 @@ def ens_force_normalize(text: str) -> str:
     Apply ENS normalization to a string. If the result is not normalized then this function 
     will try to make the input normalized by removing all disallowed characters.
 
-    Raises `InvalidLabelError` if:
+    Raises `DisallowedLabelError` if:
     - the force normalization process removes all characters from any label in the input
     - the `NORM_ERR_CONF_WHOLE` error is found
     """
     while True:
         try:
             return ens_normalize(text)
-        except InvalidLabelError as e:
-            if e.type is InvalidLabelErrorType.EMPTY:
+        except DisallowedLabelError as e:
+            if e.type is DisallowedLabelErrorType.EMPTY:
                 raise e
             if e.index is not None and e.disallowed is not None and e.suggested is not None:
                 new_text = text[:e.index] + e.suggested + text[e.index + len(e.disallowed):]
@@ -994,11 +986,11 @@ def ens_beautify(text: str) -> str:
     """
     Apply ENS normalization with beautification to a string.
 
-    Raises InvalidLabelError if the input cannot be normalized.
+    Raises DisallowedLabelError if the input cannot be normalized.
     """
     res = ens_process(text, do_beautify=True)
-    if res.invalid_label_error is not None:
-        raise res.invalid_label_error
+    if res.disallowed_label_error is not None:
+        raise res.disallowed_label_error
     return res.beautified
 
 
@@ -1039,11 +1031,11 @@ def ens_transformations(input: str) -> List[NormalizationTransformation]:
     This function returns a list of `NormalizationTransformation` objects
     that describe the modifications applied by ENS normalization to the input string.
 
-    Raises InvalidLabelError if the input cannot be normalized.
+    Raises DisallowedLabelError if the input cannot be normalized.
     """
     res = ens_process(input, do_transformations=True)
-    if res.invalid_label_error is not None:
-        raise res.invalid_label_error
+    if res.disallowed_label_error is not None:
+        raise res.disallowed_label_error
     return res.transformations
 
 
