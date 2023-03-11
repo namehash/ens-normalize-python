@@ -40,10 +40,8 @@ jobs:
       run: |
         pytest -vv --cov-report term-missing --cov=ens_normalize tests/
     - name: Coverage
-      if: github.ref == 'refs/heads/main'
       run: coverage-badge -f -o coverage_badge.svg
     - name: Commit changess
-      if: github.ref == 'refs/heads/main'
       uses: EndBug/add-and-commit@v9
       with:
         author_name: github-actions
