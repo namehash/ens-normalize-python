@@ -985,12 +985,12 @@ def ens_force_normalize(text: str) -> str:
                 raise e
             if e.start is not None and e.disallowed is not None and e.suggested is not None:
                 new_text = text[:e.start] + e.suggested + text[e.start + len(e.disallowed):]
-                if new_text == text:
-                    # protect against infinite loops
-                    raise e
-                text = new_text
-            else:
-                raise e
+                # protect against infinite loops
+                if new_text != text:
+                    text = new_text
+                    continue
+                # we should never get here but if we do we raise the original error
+            raise e
 
 
 def ens_beautify(text: str) -> str:
