@@ -941,12 +941,11 @@ def ens_normalize(text: str) -> str:
 
 def ens_force_normalize(text: str) -> str:
     """
-    Apply ENS normalization to a string.
-
-    This function will try to normalize the input by removing all disallowed characters.
+    Apply ENS normalization to a string. If the result is not normalized then this function 
+    will try to make the input normalized by removing all disallowed characters.
 
     Raises `NormalizationError` if:
-    - the normalization process removes all characters from any label in the input
+    - the force normalization process removes all characters from any label in the input
     - the `NORM_ERR_CONF_WHOLE` error is found
     """
     while True:
