@@ -964,7 +964,7 @@ def ens_force_normalize(text: str) -> str:
 
     Raises `DisallowedLabelError` if:
     - the force normalization process removes all characters from any label in the input
-    - the `NORM_ERR_CONF_WHOLE` error is found
+    - `NORM_ERR_CONF_WHOLE`, `NSM_REPEATED`, or `NSM_TOO_MANY` error is found
     """
     while True:
         try:

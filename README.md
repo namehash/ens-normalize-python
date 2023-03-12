@@ -10,6 +10,12 @@
 * Passes an [additional suite of further tests](/tools/updater/update-ens.js#L54) for compatibility with the official [Javascript reference implementation](https://github.com/adraffy/ens-normalize.js) and code testing coverage.
 * Based on [JavaScript implementation version 1.9.0](https://github.com/adraffy/ens-normalize.js/tree/4873fbe6393e970e186ab57860cc59cbbb1fa162).
 
+## Glossary
+
+* disallowed name - name that cannot be converted into a valid normalized form using ENS Name Normalization Standard
+* valid name - name that is normalized or normalizable by the standard
+* fixable errors - `DisallowedLabelError`s for which fields `disallowed`, `index`, `suggested`, and `disallowed_sequence_info` are not None
+
 ## Usage
 
 The package is available on [pypi](https://pypi.org/project/ens-normalize/)
@@ -28,7 +34,7 @@ Normalize an ENS name:
 
 ```python
 # str -> str
-# raises DisallowedLabelError for disallowed names according to the ENS Name Normalization Standard
+# raises DisallowedLabelError for disallowed names
 # output ready for namehash
 ens_normalize('Nick.ETH')
 # 'nick.eth'
@@ -72,10 +78,11 @@ except DisallowedLabelError as e:
 
     # You may be able to fix this error by replacing e.disallowed
     # with e.suggested in the input string.
+    # Fields index, disallowed_sequence_info, disallowed, and suggested are not None only for fixable errors.
     # Other errors might be found even after applying this suggestion.
 ```
 
-You can force the normalization of invalid names:
+You can force conversion of disallowed names into valid names:
 
 ```python
 # input name with disallowed zero width joiner and '?'
@@ -83,11 +90,9 @@ You can force the normalization of invalid names:
 ens_force_normalize('Ni‍ck?.ETH')
 # 'nick.eth'
 # ZWJ and '?' are removed, no error is raised
-# note: ens_normalize() is preferred over ens_force_normalize()
-#       because ens_force_normalize() might destroy the input
-#       by removing too many characters
+# note: force conversion is not standardized
 
-# note: might still raise DisallowedLabelError for certain names, which can't be force normalized
+# note: might still raise DisallowedLabelError for certain names, which can not be force normalized, e.g.
 ens_force_normalize('abc..eth')
 # DisallowedLabelError: Contains a disallowed empty label
 ```
@@ -124,7 +129,7 @@ ens_tokenize('Nàme‍🧙‍♂.eth')
 #  TokenValid(cps=[101, 116, 104], type='valid')]
 ```
 
-For a valid name, you can find out how the input was modified during normalization:
+For a valid name, you can find out how the input was transformed during normalization:
 
 ```python
 # Returns a list of transformations (substring -> string)
@@ -141,7 +146,7 @@ ens_transformations('Nàme🧙‍♂️.eth')
 #  NormalizationTransformation(code="FE0F", index=4, disallowed="🧙‍♂️", suggested="🧙‍♂")]
 ```
 
-A typical normalization workflow:
+An example normalization workflow:
 
 ```python
 name = 'Nàme🧙‍♂️.eth'
@@ -161,12 +166,12 @@ try:
         #                              invisible character inside emoji ^
 except DisallowedLabelError as e:
     # Even if the name cannot be normalized
-    # we can still suggest a possible fix.
+    # we still may be able to suggest a possible fix (for fixable errors).
     print('Error:', e)
     print('Try removing', e.disallowed, 'at index', e.start)
 ```
 
-You can run all of the above functions at once:
+You can run all of the above functions at once. It is faster than run all of them sequentially.
 
 ```python
 # use only the do_* flags you need
@@ -189,34 +194,34 @@ ens_process("Nàme🧙‍♂️1⃣.eth",
 
 ## List of all `DisallowedLabelError` types
 
-For some errors it is difficult to find the substring of the input which caused the error.
+For some errors, it is challenging to communicate the normalization error as a problem with a specific substring.
 For these errors (see 3rd table column) the `index`, `disallowed_sequence_info`, `disallowed` and `suggested` fields will be `None`.
 
-| `DisallowedLabelErrorType` | General info | Disallowed substring reported |
-| ---------- | ----------- | --------------- |
-| `UNDERSCORE` | Contains an underscore in a disallowed position | ✅ |
-| `HYPHEN`     | Contains the sequence '--' in a disallowed position | ✅ |
-| `EMPTY`      | Contains a disallowed empty label | ✅ |
-| `CM_START`   | Contains a combining mark in a disallowed position at the start of the label | ✅ |
-| `CM_EMOJI`   | Contains a combining mark in a disallowed position after an emoji | ✅ |
-| `NSM_REPEATED` | Contains a repeated non-spacing mark | ❌ |
-| `NSM_TOO_MANY` | Contains too many consecutive non-spacing marks | ❌ |
-| `DISALLOWED` | Contains a disallowed character | ✅ |
-| `INVISIBLE`  | Contains a disallowed invisible character | ✅ |
-| `FENCED_LEADING`  | Contains a disallowed character at the start of a label | ✅ |
-| `FENCED_MULTI`    | Contains a disallowed consecutive sequence of characters | ✅ |
-| `FENCED_TRAILING` | Contains a disallowed character at the end of a label | ✅ |
-| `CONF_WHOLE` | Contains visually confusing characters that are disallowed | ❌ |
-| `CONF_MIXED` | Contains visually confusing characters from different scripts that are disallowed | ✅ |
+| `DisallowedLabelErrorType` | General info | Disallowed sequence info | Potential resolution of error |
+| ---------- | ----------- | ----------- | ----------- |
+| `UNDERSCORE` | Contains an underscore in a disallowed position | An underscore is only allowed at the start of a label | ✅ |
+| `HYPHEN`     | Contains the sequence '--' in a disallowed position | Hyphens are disallowed at the 2nd and 3rd positions of a label | ✅ |
+| `EMPTY`      | Contains a disallowed empty label | Empty labels are not allowed, e.g. abc..eth | ✅ |
+| `CM_START`   | Contains a combining mark in a disallowed position at the start of the label | A combining mark is disallowed at the start of a label | ✅ |
+| `CM_EMOJI`   | Contains a combining mark in a disallowed position after an emoji | A combining mark is disallowed after an emoji | ✅ |
+| `NSM_REPEATED` | Contains a repeated non-spacing mark | `None` | ❌ |
+| `NSM_TOO_MANY` | Contains too many consecutive non-spacing marks | `None` | ❌ |
+| `DISALLOWED` | Contains a disallowed character | This character is disallowed | ✅ |
+| `INVISIBLE`  | Contains a disallowed invisible character | This invisible character is disallowed | ✅ |
+| `FENCED_LEADING`  | Contains a disallowed character at the start of a label | This character is disallowed at the start of a label | ✅ |
+| `FENCED_MULTI`    | Contains a disallowed consecutive sequence of characters | Characters in this sequence cannot be placed next to each other | ✅ |
+| `FENCED_TRAILING` | Contains a disallowed character at the end of a label | This character is disallowed at the end of a label | ✅ |
+| `CONF_WHOLE` | Contains visually confusing characters that are disallowed | `None` | ❌ |
+| `CONF_MIXED` | Contains visually confusing characters from different scripts that are disallowed | This character is disallowed because it is visually confusing with another character from a different script | ✅ |
 
 ## List of all normalization transformations
 
-| `NormalizationTransformationType` | General info | Disallowed substring reported |
-| ---------- | ----------- | --------------- |
-| `IGNORED`    | Contains disallowed "ignored" characters that have been removed | ✅ |
-| `MAPPED`     | Contains a disallowed character that has been replaced by a normalized sequence | ✅ |
-| `FE0F`       | Contains a disallowed variant of an emoji which has been replaced by an equivalent normalized emoji | ✅ |
-| `NFC`        | Contains a disallowed sequence that is not "NFC normalized" which has been replaced by an equivalent normalized sequence | ✅ |
+| `NormalizationTransformationType` | General info | Disallowed sequence info | Transform details |
+| ---------- | ----------- | ----------- | ----------- |
+| `IGNORED`    | Contains disallowed "ignored" characters that have been removed | This character is ignored during normalization and has been automatically removed | ✅ |
+| `MAPPED`     | Contains a disallowed character that has been replaced by a normalized sequence | This character is disallowed and has been automatically replaced by a normalized sequence | ✅ |
+| `FE0F`       | Contains a disallowed variant of an emoji which has been replaced by an equivalent normalized emoji | This emoji has been automatically fixed to remove an invisible character | ✅ |
+| `NFC`        | Contains a disallowed sequence that is not "NFC normalized" which has been replaced by an equivalent normalized sequence | This sequence has been automatically normalized into NFC canonical form | ✅ |
 
 ## Develop
 
