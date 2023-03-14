@@ -5,16 +5,19 @@
 ![Coverage](coverage_badge.svg)
 
 * Python implementation of the [ENS Name Normalization Standard](https://github.com/adraffy/ensip-norm/blob/main/draft.md).
-  Thanks to [Adraffy](https://github.com/adraffy) for his leadership in coordinating the definition of this standard.
+  Thanks to [Adraffy](https://github.com/adraffy) for his leadership in coordinating the definition of this standard with the ENS community.
 * Passes **100%** of the [official validation tests](https://github.com/adraffy/ens-normalize.js/tree/main/validate) (validated automatically with pytest, see below).
 * Passes an [additional suite of further tests](/tools/updater/update-ens.js#L54) for compatibility with the official [Javascript reference implementation](https://github.com/adraffy/ens-normalize.js) and code testing coverage.
 * Based on [JavaScript implementation version 1.9.0](https://github.com/adraffy/ens-normalize.js/tree/4873fbe6393e970e186ab57860cc59cbbb1fa162).
 
 ## Glossary
 
-* disallowed name - name that cannot be converted into a valid normalized form using ENS Name Normalization Standard
-* valid name - name that is normalized or normalizable by the standard
-* fixable errors - `DisallowedLabelError`s for which fields `disallowed`, `index`, `suggested`, and `disallowed_sequence_info` are not None
+* normalized name - name that is already in normalized form according to the ENS Normalization Standard
+* normalizable name - name that is normalized or that can be converted into a normalized name using ens_normalize
+* disallowed name - name that is not normalized or normalizable
+* curable name - name that may be disallowed but can still be converted into a normalized name using ens_cure
+* curable error - `DisallowedLabelError`s for which fields `disallowed`, `index`, `suggested`, and `disallowed_sequence_info` are not None
+* fatal error - `DisallowedLabelError`s for which fields `disallowed`, `index`, `suggested`, and `disallowed_sequence_info` are None
 
 ## Usage
 
@@ -41,13 +44,13 @@ ens_normalize('Nick.ETH')
 # note: does not enforce .eth TLD 3-character minimum
 ```
 
-Catch disallowed names:
+Inspect issues with names that cannot be normalized:
 
 ```python
 # added a hidden "zero width joiner" character
 try:
     ens_normalize('Ni‍ck.ETH')
-# Catch the first disallowed substring (there might be more).
+# Catch the first normalization error (there might be more).
 except DisallowedLabelError as e:
     # error code
     print(e.code)
@@ -71,10 +74,10 @@ except DisallowedLabelError as e:
     print(repr(e.disallowed))
     # '\u200d'
 
-    # a suggestion for fixing the error
+    # a suggestion for fixing the error (there might be more)
     print(repr(e.suggested))
     # ''
-    # empty string means that the disallowed substring has to be removed
+    # replacing the disallowed substring with this empty string represents that the disallowed substring should be removed
 
     # You may be able to fix this error by replacing e.disallowed
     # with e.suggested in the input string.
@@ -107,7 +110,7 @@ ens_beautify('1⃣2⃣.eth')
 
 # note: normalization is unchanged:
 # ens_normalize(ens_beautify(x)) == ens_normalize(x)
-# note: except beautifying emojis, it capitalizes the letter 'ξ' to 'Ξ' (Ethereum symbol) in non-Greek labels
+# note: in addition to beautifying emojis, ens_beautify converts the character 'ξ' (Greek lowercase 'Xi') to 'Ξ' (Greek uppercase 'Xi', a.k.a. the Ethereum symbol) in labels that contain no other Greek characters
 ```
 
 Generate detailed label analysis:
@@ -168,7 +171,7 @@ except DisallowedLabelError as e:
     # Even if the name cannot be normalized
     # we still may be able to suggest a possible fix (for fixable errors).
     print('Error:', e)
-    print('Try removing', e.disallowed, 'at index', e.start)
+    print('Try removing', e.disallowed, 'at index', e.index)
 ```
 
 You can run all of the above functions at once. It is faster than run all of them sequentially.
