@@ -74,7 +74,7 @@ except DisallowedLabelError as e:
     print(repr(e.disallowed))
     # '\u200d'
 
-    # a suggestion for fixing the error (there might be more)
+    # a suggestion for fixing the first error (there might be more errors)
     print(repr(e.suggested))
     # ''
     # replacing the disallowed substring with this empty string represents that the disallowed substring should be removed
