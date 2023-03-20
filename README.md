@@ -2,7 +2,7 @@
 
 ![Tests](https://github.com/namehash/ens-normalize-python/actions/workflows/python-app.yml/badge.svg?branch=main)
 ![PyPI](https://img.shields.io/pypi/v/ens-normalize)
-![Coverage](coverage_badge.svg)
+![Coverage](https://raw.githubusercontent.com/namehash/ens-normalize-python/main/coverage_badge.svg)
 
 * Python implementation of the [ENS Name Normalization Standard](https://github.com/adraffy/ensip-norm/blob/main/draft.md).
   Thanks to [Adraffy](https://github.com/adraffy) for his leadership in coordinating the definition of this standard with the ENS community.
