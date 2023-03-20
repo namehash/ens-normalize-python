@@ -50,7 +50,7 @@ Inspect issues with names that cannot be normalized:
 # added a hidden "zero width joiner" character
 try:
     ens_normalize('Ni‍ck.ETH')
-# Catch the first normalization error (there might be more).
+# Catch the first normalization error (the name we are attempting to normalize could have more than one error).
 except DisallowedLabelError as e:
     # error code
     print(e.code)
