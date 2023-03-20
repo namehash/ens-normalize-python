@@ -85,7 +85,7 @@ except DisallowedLabelError as e:
     # Other errors might be found even after applying this suggestion.
 ```
 
-You can force conversion of disallowed names into valid names:
+You can force conversion of disallowed names into normalized names:
 
 ```python
 # input name with disallowed zero width joiner and '?'
@@ -132,7 +132,7 @@ ens_tokenize('Nàme‍🧙‍♂.eth')
 #  TokenValid(cps=[101, 116, 104], type='valid')]
 ```
 
-For a valid name, you can find out how the input was transformed during normalization:
+For a normalizable name, you can find out how the input is transformed during normalization:
 
 ```python
 # Returns a list of transformations (substring -> string)
