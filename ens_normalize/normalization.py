@@ -957,13 +957,13 @@ def ens_normalize(text: str) -> str:
     return res.normalized
 
 
-def ens_force_normalize(text: str) -> str:
+def ens_cure(text: str) -> str:
     """
     Apply ENS normalization to a string. If the result is not normalized then this function 
     will try to make the input normalized by removing all disallowed characters.
 
     Raises `DisallowedLabelError` if:
-    - the force normalization process removes all characters from any label in the input
+    - the process removes all characters from any label in the input
     - `NORM_ERR_CONF_WHOLE`, `NSM_REPEATED`, or `NSM_TOO_MANY` error is found
     """
     while True:

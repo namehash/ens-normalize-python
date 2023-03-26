@@ -322,18 +322,18 @@ def test_pickle_cache():
     ens_normalize_module.normalization.load_normalization_data()
 
 
-def test_ens_force_normalize():
-    assert ens_force_normalize('Ab') == 'ab'
-    assert ens_force_normalize('a_b') == 'ab'
-    assert ens_force_normalize('a\'\'b') == 'a’b'
-    assert ens_force_normalize('bitcoin.bitcοin.bi̇tcoin') == 'bitcoin.bitcin.bitcoin'
+def test_ens_cure():
+    assert ens_cure('Ab') == 'ab'
+    assert ens_cure('a_b') == 'ab'
+    assert ens_cure('a\'\'b') == 'a’b'
+    assert ens_cure('bitcoin.bitcοin.bi̇tcoin') == 'bitcoin.bitcin.bitcoin'
     with pytest.raises(DisallowedLabelError) as e:
-        ens_force_normalize('0x.0χ.0х')
+        ens_cure('0x.0χ.0х')
     assert e.value.type == DisallowedLabelErrorType.CONF_WHOLE
     with pytest.raises(DisallowedLabelError) as e:
-        ens_force_normalize('?')
+        ens_cure('?')
     assert e.value.type == DisallowedLabelErrorType.EMPTY
     for name in ('abc.?', 'abc.?.xyz', '?.xyz', 'abc..?.xyz'):
         with pytest.raises(DisallowedLabelError) as e:
-            ens_force_normalize(name)
+            ens_cure(name)
         assert e.value.type == DisallowedLabelErrorType.EMPTY
