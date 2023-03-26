@@ -27,15 +27,10 @@ The package is available on [pypi](https://pypi.org/project/ens-normalize/)
 pip install ens-normalize
 ```
 
-Import the main functions provided by this library:
-
-```python
-from ens_normalize import ens_normalize, ens_beautify
-```
-
 Normalize an ENS name:
 
 ```python
+from ens_normalize import ens_normalize
 # str -> str
 # raises DisallowedLabelError for disallowed names
 # output ready for namehash
@@ -47,6 +42,7 @@ ens_normalize('Nick.ETH')
 Inspect issues with names that cannot be normalized:
 
 ```python
+from ens_normalize import DisallowedLabelError
 # added a hidden "zero width joiner" character
 try:
     ens_normalize('Ni‍ck.ETH')
@@ -85,24 +81,26 @@ except DisallowedLabelError as e:
     # Other errors might be found even after applying this suggestion.
 ```
 
-You can force conversion of disallowed names into normalized names:
+You can attempt conversion of disallowed names into normalized names:
 
 ```python
+from ens_normalize import ens_cure
 # input name with disallowed zero width joiner and '?'
 # str -> str
-ens_force_normalize('Ni‍ck?.ETH')
+ens_cure('Ni‍ck?.ETH')
 # 'nick.eth'
 # ZWJ and '?' are removed, no error is raised
-# note: force conversion is not standardized
+# note: this function is not a part of the ENS Normalization Standard
 
-# note: might still raise DisallowedLabelError for certain names, which can not be force normalized, e.g.
-ens_force_normalize('abc..eth')
+# note: might still raise DisallowedLabelError for certain names, which cannot be cured, e.g.
+ens_cure('abc..eth')
 # DisallowedLabelError: Contains a disallowed empty label
 ```
 
 Format names with fully-qualified emoji:
 
 ```python
+from ens_normalize import ens_beautify
 # works like ens_normalize()
 # output ready for display
 ens_beautify('1⃣2⃣.eth')
@@ -135,6 +133,7 @@ ens_tokenize('Nàme‍🧙‍♂.eth')
 For a normalizable name, you can find out how the input is transformed during normalization:
 
 ```python
+from ens_normalize import ens_transformations
 # Returns a list of transformations (substring -> string)
 # that have been applied to the input during normalization.
 # NormalizationTransformation has the same fields as DisallowedLabelError:
@@ -168,15 +167,20 @@ try:
         # NormalizationTransformation(code="FE0F", index=4, disallowed="🧙‍♂️", suggested="🧙‍♂")
         #                              invisible character inside emoji ^
 except DisallowedLabelError as e:
-    # Even if the name cannot be normalized
-    # we still may be able to suggest a possible fix (for fixable errors).
     print('Error:', e)
-    print('Try removing', e.disallowed, 'at index', e.index)
+    # Even if the name is invalid according to the ENS Normalization Standard,
+    # we can try to automatically remove disallowed characters.
+    try:
+        print(ens_cure(name))
+    except DisallowedLabelError as e:
+        # The name cannot be automatically fixed.
+        print('Error:', e)
 ```
 
-You can run all of the above functions at once. It is faster than run all of them sequentially.
+You can run many of the above functions at once. It is faster than running all of them sequentially.
 
 ```python
+from ens_normalize import ens_process
 # use only the do_* flags you need
 ens_process("Nàme🧙‍♂️1⃣.eth",
     do_normalize=True,
