@@ -216,7 +216,7 @@ For fatal errors (not curable), it is challenging to communicate the normalizati
 | `EMPTY_NAME`   | The name is empty |
 | `NSM_REPEATED` | Contains a repeated non-spacing mark |
 | `NSM_TOO_MANY` | Contains too many consecutive non-spacing marks |
-| `CONF_WHOLE` | Contains visually confusing characters that are disallowed |
+| `CONF_WHOLE` | Contains visually confusing characters from {script1} and {script2} scripts |
 
 ## List of all `CurableError` types
 
@@ -234,7 +234,7 @@ Curable errors contain additional information about the disallowed substring.
 | `FENCED_LEADING`  | Contains a disallowed character at the start of a label | This character is disallowed at the start of a label |
 | `FENCED_MULTI`    | Contains a disallowed consecutive sequence of characters | Characters in this sequence cannot be placed next to each other |
 | `FENCED_TRAILING` | Contains a disallowed character at the end of a label | This character is disallowed at the end of a label |
-| `CONF_MIXED` | Contains visually confusing characters from different scripts that are disallowed | This character is disallowed because it is visually confusing with another character from a different script |
+| `CONF_MIXED` | Contains visually confusing characters from multiple scripts ({script1}/{script2}) | This character from the {script1} script is disallowed because it is visually confusing with another character from the {script2} script |
 
 ## List of all normalization transformations
 
