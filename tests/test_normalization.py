@@ -95,9 +95,8 @@ def test_ens_tokenize_full():
     # --
     ('aa--a', CurableErrorType.HYPHEN, 2, '--', ''),
     # empty
-    # TODO should this return empty string?
-    ("", DisallowedNameErrorType.EMPTY_NAME, 0, "", ""),
-    ("a..b", DisallowedNameErrorType.EMPTY_NAME, 2, '', ''),
+    ("", DisallowedNameErrorType.EMPTY_NAME, None, None, None),
+    ("a..b", CurableErrorType.EMPTY_LABEL, 1, '..', '.'),
 
     # combining mark at the beginning
     ('\u0327a', CurableErrorType.CM_START, 0, '\u0327', ''),
@@ -192,19 +191,19 @@ def test_normalization_error_type_code(error_type: DisallowedNameErrorType, code
 ])
 def test_ens_norm_error_pos(text):
     ret = ens_process(text + '_')
-    assert ret.cure.type == CurableErrorType.UNDERSCORE
-    assert ret.cure.index == len(text)
-    assert ret.cure.disallowed == '_'
-    assert ret.cure.suggested == ''
+    assert ret.error.type == CurableErrorType.UNDERSCORE
+    assert ret.error.index == len(text)
+    assert ret.error.disallowed == '_'
+    assert ret.error.suggested == ''
 
 
 def test_ens_norm_error_pos_disallowed():
     t = 'abc.abc.abc👩🏿‍🦲.aa\u0300b.a¼b.a\xadb'
     ret = ens_process(t + '?')
-    assert ret.cure.type == CurableErrorType.DISALLOWED
-    assert ret.cure.index == len(t)
-    assert ret.cure.disallowed == '?'
-    assert ret.cure.suggested == ''
+    assert ret.error.type == CurableErrorType.DISALLOWED
+    assert ret.error.index == len(t)
+    assert ret.error.disallowed == '?'
+    assert ret.error.suggested == ''
 
 
 def test_ens_norm_error_pos_nfc():
@@ -307,7 +306,7 @@ def test_error_is_exception():
 
 
 def test_str_repr():
-    e = ens_process('a_').cure
+    e = ens_process('a_').error
 
     assert str(e) == CurableErrorType.UNDERSCORE.general_info
     assert repr(e) == 'CurableError(code="UNDERSCORE", index=1, disallowed="_", suggested="")'
@@ -334,7 +333,7 @@ def test_ens_cure():
     with pytest.raises(DisallowedNameError) as e:
         ens_cure('?')
     assert e.value.type == DisallowedNameErrorType.EMPTY_NAME
-    for name in ('abc.?', 'abc.?.xyz', '?.xyz', 'abc..?.xyz'):
-        with pytest.raises(DisallowedNameError) as e:
-            ens_cure(name)
-        assert e.value.type == DisallowedNameErrorType.EMPTY_NAME
+    assert ens_cure('abc.?') == 'abc'
+    assert ens_cure('abc.?.xyz') == 'abc.xyz'
+    assert ens_cure('?.xyz') == 'xyz'
+    assert ens_cure('abc..?.xyz') == 'abc.xyz'

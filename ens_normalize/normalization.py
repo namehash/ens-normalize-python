@@ -263,7 +263,6 @@ class ENSProcessResult(NamedTuple):
     normalized: Optional[str]
     beautified: Optional[str]
     tokens: Optional[List[Token]]
-    cure: Optional[CurableError]
     error: Optional[DisallowedNameError]
     transformations: Optional[List[NormalizationTransformation]]
 
@@ -506,9 +505,31 @@ def normalize_tokens(tokens: List[Token]) -> List[Token]:
     return collapse_valid_tokens(tokens)
 
 
-def post_check_null_label(label: str) -> Optional[DisallowedNameError]:
-    if len(label) == 0:
+def post_check_empty(name: str) -> Optional[Union[DisallowedNameError, CurableError]]:
+    if len(name) == 0:
         return DisallowedNameError(DisallowedNameErrorType.EMPTY_NAME)
+    if name[0] == '.':
+        return CurableError(
+            CurableErrorType.EMPTY_LABEL,
+            index=0,
+            disallowed='.',
+            suggested='',
+        )
+    if name[-1] == '.':
+        return CurableError(
+            CurableErrorType.EMPTY_LABEL,
+            index=len(name) - 1,
+            disallowed='.',
+            suggested='',
+        )
+    i = name.find('..')
+    if i >= 0:
+        return CurableError(
+            CurableErrorType.EMPTY_LABEL,
+            index=i,
+            disallowed='..',
+            suggested='.',
+        )
 
 
 def post_check_underscore(label: str) -> Optional[CurableError]:
@@ -695,14 +716,16 @@ def post_check_whole(cps: Iterable[int]) -> Optional[DisallowedNameError]:
 
 def post_check(name: str, label_is_greek: List[bool]) -> Optional[Union[DisallowedNameError, CurableError]]:
     # name has emojis replaced with a single FE0F
+    e = post_check_empty(name)
+    if e is not None:
+        return e
     label_offset = 0
     for label in name.split('.'):
         # will be set inside post_check_group_whole
         is_greek = [False]
         cps = str2cps(label)
         e = (
-            post_check_null_label(label)
-            or post_check_underscore(label)
+            post_check_underscore(label)
             or post_check_hyphen(label)
             or post_check_cm_leading_emoji(cps)
             or post_check_fenced(cps)
@@ -814,8 +837,7 @@ def ens_process(input: str,
     - `normalized`: normalized name or `None` if input cannot be normalized or `do_normalize` is `False`
     - `beautified`: beautified name or `None` if input cannot be normalized or `do_beautify` is `False`
     - `tokens`: list of `Token` objects or `None` if `do_tokenize` is `False`
-    - `cure`: `CurableError` object or `None`
-    - `error`: `DisallowedNameError` object or `None`
+    - `error`: `DisallowedNameError` or `CurableError` or `None` if input is valid
     - `transformations`: list of `NormalizationTransformation` objects or `None` if `do_transformations` is `False`
     """
     tokens: List[Token] = []
@@ -904,6 +926,10 @@ def ens_process(input: str,
         if isinstance(error, CurableError):
             offset_err_start(error, tokens)
 
+    # else:
+        # only the result of post_check() is not input aligned
+        # so we do not offset the error set by the input scanning loop
+
     if error is not None:
         normalized = None
         beautified = None
@@ -914,13 +940,10 @@ def ens_process(input: str,
     # respect the caller's wishes even though we tokenize anyway
     tokens = tokens if do_tokenize else None
 
-    cure = error if isinstance(error, CurableError) else None
-
     return ENSProcessResult(
         normalized,
         beautified,
         tokens,
-        cure,
         error,
         transformations,
     )
@@ -980,22 +1003,16 @@ def ens_cure(text: str) -> str:
     Apply ENS normalization to a string. If the result is not normalized then this function
     will try to make the input normalized by removing all disallowed characters.
 
-    Raises `DisallowedNameError` if:
-    - the process removes all characters from any label in the input
-    - `NORM_ERR_CONF_WHOLE`, `NSM_REPEATED`, or `NSM_TOO_MANY` error is found
+    Raises `DisallowedNameError` if one is encountered and cannot be cured.
     """
     while True:
         try:
             return ens_normalize(text)
         except CurableError as e:
-            if e.type is not CurableErrorType.EMPTY_LABEL:
-                new_text = text[:e.index] + e.suggested + text[e.index + len(e.disallowed):]
-                # protect against infinite loops
-                if new_text != text:
-                    text = new_text
-                    continue
-                # we should never get here but if we do we raise the original error
-            raise e
+            new_text = text[:e.index] + e.suggested + text[e.index + len(e.disallowed):]
+            # protect against infinite loops
+            assert new_text != text, 'ens_cure() entered an infinite loop'
+            text = new_text
 
 
 def ens_beautify(text: str) -> str:
