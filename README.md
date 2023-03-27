@@ -96,8 +96,10 @@ ens_cure('Ni‍ck?.ETH')
 # note: this function is not a part of the ENS Normalization Standard
 
 # note: might still raise DisallowedNameError for certain names, which cannot be cured, e.g.
-ens_cure('abc..eth')
-# DisallowedNameError: Contains a disallowed empty label
+ens_cure('?')
+# DisallowedNameError: The name is empty
+ens_cure('0χх0.eth')
+# DisallowedNameError: Contains visually confusing characters that are disallowed
 ```
 
 Format names with fully-qualified emoji:
