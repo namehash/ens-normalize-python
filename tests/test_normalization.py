@@ -30,7 +30,7 @@ def test_ens_normalize_full(fn, field):
                 fn(name)
                 bad += 1
                 print(f'! "{name}" did not throw "{test["comment"]}"')
-            except DisallowedLabelError:
+            except DisallowedNameError:
                 good += 1
         else:
             test['norm'] = test.get('norm', name)
@@ -43,7 +43,7 @@ def test_ens_normalize_full(fn, field):
                 else:
                     bad += 1
                     print(f'! "{name}" -> "{actual}" != "{expected}"')
-            except DisallowedLabelError as e:
+            except DisallowedNameError as e:
                 bad += 1
                 print(f'! "{name}" threw "{e}"')
 
@@ -91,24 +91,23 @@ def test_ens_tokenize_full():
     ('good', None, None, None, None),
 
     # underscore
-    ('a_a', DisallowedLabelErrorType.UNDERSCORE, 1, '_', ''),
+    ('a_a', CurableErrorType.UNDERSCORE, 1, '_', ''),
     # --
-    ('aa--a', DisallowedLabelErrorType.HYPHEN, 2, '--', ''),
+    ('aa--a', CurableErrorType.HYPHEN, 2, '--', ''),
     # empty
-    # TODO should this return empty string?
-    ("", DisallowedLabelErrorType.EMPTY, 0, "", ""),
-    ("a..b", DisallowedLabelErrorType.EMPTY, 2, '', ''),
+    ("", DisallowedNameErrorType.EMPTY_NAME, None, None, None),
+    ("a..b", CurableErrorType.EMPTY_LABEL, 1, '..', '.'),
 
     # combining mark at the beginning
-    ('\u0327a', DisallowedLabelErrorType.CM_START, 0, '\u0327', ''),
-    ('\u0327\u0327', DisallowedLabelErrorType.CM_START, 0, '\u0327', ''),
+    ('\u0327a', CurableErrorType.CM_START, 0, '\u0327', ''),
+    ('\u0327\u0327', CurableErrorType.CM_START, 0, '\u0327', ''),
     # combining mark after emoji
-    ('a👩🏿‍🦲\u0327\u0327', DisallowedLabelErrorType.CM_EMOJI, len('a👩🏿‍🦲'), '\u0327', ''),
+    ('a👩🏿‍🦲\u0327\u0327', CurableErrorType.CM_EMOJI, len('a👩🏿‍🦲'), '\u0327', ''),
 
     # disallowed
-    ('a?', DisallowedLabelErrorType.DISALLOWED, 1, '?', ''),
+    ('a?', CurableErrorType.DISALLOWED, 1, '?', ''),
     # disallowed/ignored invisible
-    ('a\u200d', DisallowedLabelErrorType.INVISIBLE, 1, '\u200d', ''),
+    ('a\u200d', CurableErrorType.INVISIBLE, 1, '\u200d', ''),
     # ignored
     (f'a{chr(173)}', NormalizationTransformationType.IGNORED, 1, chr(173), ''),  # invisible "soft hyphen"
     # mapped
@@ -120,59 +119,60 @@ def test_ens_tokenize_full():
 
     # fenced
     # leading
-    ("'ab", DisallowedLabelErrorType.FENCED_LEADING, 0, "’", ""),
-    # ("·ab", NormalizationErrorType.FENCED_LEADING, 0, "·", ""), # was disallowed
-    ("⁄ab", DisallowedLabelErrorType.FENCED_LEADING, 0, "⁄", ""),
+    ("'ab", CurableErrorType.FENCED_LEADING, 0, "’", ""),
+    # ("·ab", CurableErrorType.FENCED_LEADING, 0, "·", ""), # was disallowed
+    ("⁄ab", CurableErrorType.FENCED_LEADING, 0, "⁄", ""),
     # multi
-    ("a''b", DisallowedLabelErrorType.FENCED_MULTI, 1, "’’", "’"),
-    # ("a··b", NormalizationErrorType.FENCED_MULTI, 1, "··", "·"),
-    ("a⁄⁄b", DisallowedLabelErrorType.FENCED_MULTI, 1, "⁄⁄", "⁄"),
-    ("a'⁄b", DisallowedLabelErrorType.FENCED_MULTI, 1, "’⁄", "’"),
+    ("a''b", CurableErrorType.FENCED_MULTI, 1, "’’", "’"),
+    # ("a··b", CurableErrorType.FENCED_MULTI, 1, "··", "·"),
+    ("a⁄⁄b", CurableErrorType.FENCED_MULTI, 1, "⁄⁄", "⁄"),
+    ("a'⁄b", CurableErrorType.FENCED_MULTI, 1, "’⁄", "’"),
     # trailing
-    ("ab'", DisallowedLabelErrorType.FENCED_TRAILING, 2, "’", ""),
-    # ("ab·", NormalizationErrorType.FENCED_TRAILING, 2, "·", ""),
-    ("ab⁄", DisallowedLabelErrorType.FENCED_TRAILING, 2, "⁄", ""),
+    ("ab'", CurableErrorType.FENCED_TRAILING, 2, "’", ""),
+    # ("ab·", CurableErrorType.FENCED_TRAILING, 2, "·", ""),
+    ("ab⁄", CurableErrorType.FENCED_TRAILING, 2, "⁄", ""),
 
     # confusables
-    ('bitcoin.bitcοin.bi̇tcoin.bitсoin', DisallowedLabelErrorType.CONF_MIXED, 12, 'ο', ''),
-    ('0x.0χ.0х', DisallowedLabelErrorType.CONF_WHOLE, None, None, None),
+    ('bitcoin.bitcοin.bi̇tcoin.bitсoin', CurableErrorType.CONF_MIXED, 12, 'ο', ''),
+    ('0x.0χ.0х', DisallowedNameErrorType.CONF_WHOLE, None, None, None),
 
     # NSM
-    ('-إؐؑؐ-.eth', DisallowedLabelErrorType.NSM_REPEATED, None, None, None),
-    ('-إؐؑؒؓؔ-.eth', DisallowedLabelErrorType.NSM_TOO_MANY, None, None, None),
+    ('-إؐؑؐ-.eth', DisallowedNameErrorType.NSM_REPEATED, None, None, None),
+    ('-إؐؑؒؓؔ-.eth', DisallowedNameErrorType.NSM_TOO_MANY, None, None, None),
 ])
 def test_ens_normalization_reason(label, error, start, disallowed, suggested):
     res = ens_process(label, do_transformations=True)
     if error is None:
-        assert res.disallowed_label_error is None
+        assert res.error is None
         assert len(res.transformations) == 0
     else:
         if isinstance(error, NormalizationTransformationType):
             res_error = res.transformations[0]
         else:
-            res_error = res.disallowed_label_error
+            res_error = res.error
         assert res_error.type == error
-        assert res_error.index == start
-        assert res_error.disallowed == disallowed
-        assert res_error.suggested == suggested
+        if isinstance(error, CurableError):
+            assert res_error.index == start
+            assert res_error.disallowed == disallowed
+            assert res_error.suggested == suggested
 
 
 @pytest.mark.parametrize(
     'error_type, code',
     [
-        (DisallowedLabelErrorType.UNDERSCORE, 'UNDERSCORE'),
-        (DisallowedLabelErrorType.HYPHEN, 'HYPHEN'),
-        (DisallowedLabelErrorType.CM_START, 'CM_START'),
-        (DisallowedLabelErrorType.CM_EMOJI, 'CM_EMOJI'),
-        (DisallowedLabelErrorType.DISALLOWED, 'DISALLOWED'),
-        (DisallowedLabelErrorType.INVISIBLE, 'INVISIBLE'),
+        (CurableErrorType.UNDERSCORE, 'UNDERSCORE'),
+        (CurableErrorType.HYPHEN, 'HYPHEN'),
+        (CurableErrorType.CM_START, 'CM_START'),
+        (CurableErrorType.CM_EMOJI, 'CM_EMOJI'),
+        (CurableErrorType.DISALLOWED, 'DISALLOWED'),
+        (CurableErrorType.INVISIBLE, 'INVISIBLE'),
         (NormalizationTransformationType.IGNORED, 'IGNORED'),
         (NormalizationTransformationType.MAPPED, 'MAPPED'),
         (NormalizationTransformationType.FE0F, 'FE0F'),
         (NormalizationTransformationType.NFC, 'NFC'),
     ]
 )
-def test_normalization_error_type_code(error_type: DisallowedLabelErrorType, code: str):
+def test_normalization_error_type_code(error_type: DisallowedNameErrorType, code: str):
     assert error_type.code == code
 
 
@@ -191,19 +191,19 @@ def test_normalization_error_type_code(error_type: DisallowedLabelErrorType, cod
 ])
 def test_ens_norm_error_pos(text):
     ret = ens_process(text + '_')
-    assert ret.disallowed_label_error.type == DisallowedLabelErrorType.UNDERSCORE
-    assert ret.disallowed_label_error.index == len(text)
-    assert ret.disallowed_label_error.disallowed == '_'
-    assert ret.disallowed_label_error.suggested == ''
+    assert ret.error.type == CurableErrorType.UNDERSCORE
+    assert ret.error.index == len(text)
+    assert ret.error.disallowed == '_'
+    assert ret.error.suggested == ''
 
 
 def test_ens_norm_error_pos_disallowed():
     t = 'abc.abc.abc👩🏿‍🦲.aa\u0300b.a¼b.a\xadb'
     ret = ens_process(t + '?')
-    assert ret.disallowed_label_error.type == DisallowedLabelErrorType.DISALLOWED
-    assert ret.disallowed_label_error.index == len(t)
-    assert ret.disallowed_label_error.disallowed == '?'
-    assert ret.disallowed_label_error.suggested == ''
+    assert ret.error.type == CurableErrorType.DISALLOWED
+    assert ret.error.index == len(t)
+    assert ret.error.disallowed == '?'
+    assert ret.error.suggested == ''
 
 
 def test_ens_norm_error_pos_nfc():
@@ -255,23 +255,23 @@ def test_ens_warnings_many():
 def test_throws():
     t = 'a_b'
 
-    with pytest.raises(DisallowedLabelError) as e:
+    with pytest.raises(CurableError) as e:
         ens_normalize(t)
-    assert e.value.type == DisallowedLabelErrorType.UNDERSCORE
+    assert e.value.type == CurableErrorType.UNDERSCORE
     assert e.value.index == 1
     assert e.value.disallowed == '_'
     assert e.value.suggested == ''
 
-    with pytest.raises(DisallowedLabelError) as e:
+    with pytest.raises(CurableError) as e:
         ens_beautify(t)
-    assert e.value.type == DisallowedLabelErrorType.UNDERSCORE
+    assert e.value.type == CurableErrorType.UNDERSCORE
     assert e.value.index == 1
     assert e.value.disallowed == '_'
     assert e.value.suggested == ''
 
-    with pytest.raises(DisallowedLabelError) as e:
+    with pytest.raises(CurableError) as e:
         ens_transformations(t)
-    assert e.value.type == DisallowedLabelErrorType.UNDERSCORE
+    assert e.value.type == CurableErrorType.UNDERSCORE
     assert e.value.index == 1
     assert e.value.disallowed == '_'
     assert e.value.suggested == ''
@@ -288,16 +288,24 @@ def test_normalization_error_object():
     t = 'a_b'
     try:
         ens_normalize(t)
-    except DisallowedLabelError as e:
-        assert e.type == DisallowedLabelErrorType.UNDERSCORE
+    except CurableError as e:
+        assert e.type == CurableErrorType.UNDERSCORE
         assert e.index == 1
         assert e.disallowed == '_'
         assert e.suggested == ''
-        assert e.code == DisallowedLabelErrorType.UNDERSCORE.code
-        assert e.general_info == DisallowedLabelErrorType.UNDERSCORE.general_info
-        assert e.disallowed_sequence_info == DisallowedLabelErrorType.UNDERSCORE.disallowed_sequence_info
+        assert e.code == CurableErrorType.UNDERSCORE.code
+        assert e.general_info == CurableErrorType.UNDERSCORE.general_info
+        assert e.disallowed_sequence_info == CurableErrorType.UNDERSCORE.disallowed_sequence_info
         assert str(e) == e.general_info
-        assert repr(e) == 'DisallowedLabelError(code="UNDERSCORE", index=1, disallowed="_", suggested="")'
+        assert repr(e) == 'CurableError(code="UNDERSCORE", index=1, disallowed="_", suggested="")'
+    try:
+        ens_normalize('')
+    except DisallowedNameError as e:
+        assert e.type == DisallowedNameErrorType.EMPTY_NAME
+        assert e.code == DisallowedNameErrorType.EMPTY_NAME.code
+        assert e.general_info == DisallowedNameErrorType.EMPTY_NAME.general_info
+        assert str(e) == e.general_info
+        assert repr(e) == 'DisallowedNameError(code="EMPTY_NAME")'
 
 
 def test_error_is_exception():
@@ -306,10 +314,10 @@ def test_error_is_exception():
 
 
 def test_str_repr():
-    e = ens_process('a_').disallowed_label_error
+    e = ens_process('a_').error
 
-    assert str(e) == DisallowedLabelErrorType.UNDERSCORE.general_info
-    assert repr(e) == 'DisallowedLabelError(code="UNDERSCORE", index=1, disallowed="_", suggested="")'
+    assert str(e) == CurableErrorType.UNDERSCORE.general_info
+    assert repr(e) == 'CurableError(code="UNDERSCORE", index=1, disallowed="_", suggested="")'
 
 
 def test_pickle_cache():
@@ -322,18 +330,27 @@ def test_pickle_cache():
     ens_normalize_module.normalization.load_normalization_data()
 
 
-def test_ens_force_normalize():
-    assert ens_force_normalize('Ab') == 'ab'
-    assert ens_force_normalize('a_b') == 'ab'
-    assert ens_force_normalize('a\'\'b') == 'a’b'
-    assert ens_force_normalize('bitcoin.bitcοin.bi̇tcoin') == 'bitcoin.bitcin.bitcoin'
-    with pytest.raises(DisallowedLabelError) as e:
-        ens_force_normalize('0x.0χ.0х')
-    assert e.value.type == DisallowedLabelErrorType.CONF_WHOLE
-    with pytest.raises(DisallowedLabelError) as e:
-        ens_force_normalize('?')
-    assert e.value.type == DisallowedLabelErrorType.EMPTY
-    for name in ('abc.?', 'abc.?.xyz', '?.xyz', 'abc..?.xyz'):
-        with pytest.raises(DisallowedLabelError) as e:
-            ens_force_normalize(name)
-        assert e.value.type == DisallowedLabelErrorType.EMPTY
+def test_ens_cure():
+    assert ens_cure('Ab') == 'ab'
+    assert ens_cure('a_b') == 'ab'
+    assert ens_cure('a\'\'b') == 'a’b'
+    assert ens_cure('bitcoin.bitcοin.bi̇tcoin') == 'bitcoin.bitcin.bitcoin'
+    with pytest.raises(DisallowedNameError) as e:
+        ens_cure('0x.0χ.0х')
+    assert e.value.type == DisallowedNameErrorType.CONF_WHOLE
+    with pytest.raises(DisallowedNameError) as e:
+        ens_cure('?')
+    assert e.value.type == DisallowedNameErrorType.EMPTY_NAME
+    assert ens_cure('abc.?') == 'abc'
+    assert ens_cure('abc.?.xyz') == 'abc.xyz'
+    assert ens_cure('?.xyz') == 'xyz'
+    assert ens_cure('abc..?.xyz') == 'abc.xyz'
+
+
+def test_ens_process_cure():
+    ret = ens_process('a_..b', do_cure=True)
+    assert ret.cured == 'a.b'
+    assert [e.code for e in ret.cures] == ['EMPTY_LABEL', 'UNDERSCORE']
+    ret = ens_process('', do_cure=True)
+    assert ret.cured is None
+    assert ret.cures is None
