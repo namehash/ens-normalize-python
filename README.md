@@ -15,9 +15,9 @@
 * name - a full domain name, e.g. `nick.eth`
 * label - a part of a name separated by a dot, e.g. `nick` and `eth` are labels in `nick.eth`
 * normalized name - name that is already in normalized form according to the ENS Normalization Standard
-* normalizable name - name that is normalized or that can be converted into a normalized name using ens_normalize
+* normalizable name - name that is normalized or that can be converted into a normalized name using `ens_normalize`
 * disallowed name - name that is not normalized or normalizable
-* curable name - name that may be disallowed but can still be converted into a normalized name using ens_cure
+* curable name - name that may be disallowed but can still be converted into a normalized name using `ens_cure`
 * fatal error - a `DisallowedNameError` object thrown by `ens_normalize` that contains only general information about the error and no possible fixes
 * curable error - a `CurableError` object (inherits from `DisallowedNameError`) thrown by `ens_normalize` that contains information about a possible fix for the error
 
