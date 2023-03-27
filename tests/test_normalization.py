@@ -298,6 +298,14 @@ def test_normalization_error_object():
         assert e.disallowed_sequence_info == CurableErrorType.UNDERSCORE.disallowed_sequence_info
         assert str(e) == e.general_info
         assert repr(e) == 'CurableError(code="UNDERSCORE", index=1, disallowed="_", suggested="")'
+    try:
+        ens_normalize('')
+    except DisallowedNameError as e:
+        assert e.type == DisallowedNameErrorType.EMPTY_NAME
+        assert e.code == DisallowedNameErrorType.EMPTY_NAME.code
+        assert e.general_info == DisallowedNameErrorType.EMPTY_NAME.general_info
+        assert str(e) == e.general_info
+        assert repr(e) == 'DisallowedNameError(code="EMPTY_NAME")'
 
 
 def test_error_is_exception():
