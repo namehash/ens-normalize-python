@@ -394,7 +394,7 @@ class NormalizationData:
     VERSION = 1
 
     def __init__(self):
-        with open(SPEC_PATH) as f:
+        with open(SPEC_PATH, encoding='utf-8') as f:
             spec = json.load(f)
 
         self.ignored: Set[int] = set(spec['ignored'])
