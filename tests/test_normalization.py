@@ -16,7 +16,7 @@ TESTS_PATH = os.path.join(os.path.dirname(__file__), 'ens-normalize-tests.json')
     ]
 )
 def test_ens_normalize_full(fn, field):
-    with open(TESTS_PATH) as f:
+    with open(TESTS_PATH, encoding='utf-8') as f:
         data = json.load(f)
 
     good = 0
@@ -57,7 +57,7 @@ def test_ens_beautify_xi():
 
 
 def test_ens_tokenize_full():
-    with open(TESTS_PATH) as f:
+    with open(TESTS_PATH, encoding='utf-8') as f:
         data = json.load(f)
 
     good = 0
