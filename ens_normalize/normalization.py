@@ -263,6 +263,8 @@ class ENSProcessResult(NamedTuple):
     normalized: Optional[str]
     beautified: Optional[str]
     tokens: Optional[List[Token]]
+    cured: Optional[str]
+    cures: Optional[List[CurableError]]
     error: Optional[DisallowedNameError]
     transformations: Optional[List[NormalizationTransformation]]
 
@@ -829,14 +831,25 @@ def ens_process(input: str,
                 do_normalize: bool = False,
                 do_beautify: bool = False,
                 do_tokenize: bool = False,
-                do_transformations: bool = False) -> ENSProcessResult:
+                do_transformations: bool = False,
+                do_cure: bool = False) -> ENSProcessResult:
     """
-    Used to compute `ens_normalize`, `ens_beautify`, `ens_tokenize` and `ens_transformations` in one go.
+    Used to compute
+
+    - `ens_normalize`
+    - `ens_beautify`
+    - `ens_tokenize`
+    - `ens_transformations`
+    - `ens_cure`
+
+    in one go.
 
     Returns `ENSProcessResult` with the following fields:
     - `normalized`: normalized name or `None` if input cannot be normalized or `do_normalize` is `False`
     - `beautified`: beautified name or `None` if input cannot be normalized or `do_beautify` is `False`
     - `tokens`: list of `Token` objects or `None` if `do_tokenize` is `False`
+    - `cured`: cured name or `None` if input cannot be cured or `do_cure` is `False`
+    - `cures`: list of fixed `CurableError` objects or `None` if input cannot be cured or `do_cure` is `False`
     - `error`: `DisallowedNameError` or `CurableError` or `None` if input is valid
     - `transformations`: list of `NormalizationTransformation` objects or `None` if `do_transformations` is `False`
     """
@@ -940,10 +953,20 @@ def ens_process(input: str,
     # respect the caller's wishes even though we tokenize anyway
     tokens = tokens if do_tokenize else None
 
+    cured = None
+    cures = None
+    if do_cure:
+        try:
+            cured, cures = _ens_cure(input)
+        except DisallowedNameError:
+            pass
+
     return ENSProcessResult(
         normalized,
         beautified,
         tokens,
+        cured,
+        cures,
         error,
         transformations,
     )
@@ -998,6 +1021,19 @@ def ens_normalize(text: str) -> str:
     return res.normalized
 
 
+def _ens_cure(text: str) -> Tuple[str, List[CurableError]]:
+    cures = []
+    while True:
+        try:
+            return ens_normalize(text), cures
+        except CurableError as e:
+            new_text = text[:e.index] + e.suggested + text[e.index + len(e.disallowed):]
+            # protect against infinite loops
+            assert new_text != text, 'ens_cure() entered an infinite loop'
+            text = new_text
+            cures.append(e)
+
+
 def ens_cure(text: str) -> str:
     """
     Apply ENS normalization to a string. If the result is not normalized then this function
@@ -1005,14 +1041,7 @@ def ens_cure(text: str) -> str:
 
     Raises `DisallowedNameError` if one is encountered and cannot be cured.
     """
-    while True:
-        try:
-            return ens_normalize(text)
-        except CurableError as e:
-            new_text = text[:e.index] + e.suggested + text[e.index + len(e.disallowed):]
-            # protect against infinite loops
-            assert new_text != text, 'ens_cure() entered an infinite loop'
-            text = new_text
+    return _ens_cure(text)[0]
 
 
 def ens_beautify(text: str) -> str:

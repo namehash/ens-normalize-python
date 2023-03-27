@@ -345,3 +345,12 @@ def test_ens_cure():
     assert ens_cure('abc.?.xyz') == 'abc.xyz'
     assert ens_cure('?.xyz') == 'xyz'
     assert ens_cure('abc..?.xyz') == 'abc.xyz'
+
+
+def test_ens_process_cure():
+    ret = ens_process('a_..b', do_cure=True)
+    assert ret.cured == 'a.b'
+    assert [e.code for e in ret.cures] == ['EMPTY_LABEL', 'UNDERSCORE']
+    ret = ens_process('', do_cure=True)
+    assert ret.cured is None
+    assert ret.cures is None

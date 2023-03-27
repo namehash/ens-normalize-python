@@ -189,11 +189,14 @@ ens_process("Nàme🧙‍♂️1⃣.eth",
     do_beautify=True,
     do_tokenize=True,
     do_transformations=True,
+    do_cure=True,
 )
 # ENSProcessResult(
 #   normalized='nàme🧙\u200d♂1⃣.eth',
 #   beautified='nàme🧙\u200d♂️1️⃣.eth',
 #   tokens=[...],
+#   cured='nàme🧙\u200d♂1⃣.eth',
+#   cures=[], # This is the list of cures that were applied to the input (in this case, none).
 #   error=None, # This is the exception raised by ens_normalize().
 #               # It is a DisallowedNameError or CurableError if the error is curable.
 #   transformations=[
