@@ -59,7 +59,7 @@ class DisallowedNameErrorType(ErrorTypeBase):
 
     # CONFUSABLES ----------
 
-    CONF_WHOLE = "Contains visually confusing characters that are disallowed"
+    CONF_WHOLE = "Contains visually confusing characters from {script1} and {script2} scripts"
 
 
 class CurableErrorType(CurableErrorTypeBase):
@@ -107,8 +107,8 @@ class CurableErrorType(CurableErrorTypeBase):
 
     # CONFUSABLES ----------
 
-    CONF_MIXED = "Contains visually confusing characters from different scripts that are disallowed", \
-                 "This character is disallowed because it is visually confusing with another character from a different script"
+    CONF_MIXED = "Contains visually confusing characters from multiple scripts ({scripts})", \
+                 "This character{script1} is disallowed because it is visually confusing with another character{script2}"
 
 
 class NormalizationTransformationType(CurableErrorTypeBase):
@@ -130,9 +130,10 @@ class NormalizationTransformationType(CurableErrorTypeBase):
 
 
 class DisallowedNameError(Exception):
-    def __init__(self, type: DisallowedNameErrorType):
+    def __init__(self, type: DisallowedNameErrorType, meta: Dict[str, str] = {}):
         super().__init__(type.general_info)
         self.type = type
+        self.meta = meta
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}(code="{self.type.code}")'
@@ -152,7 +153,7 @@ class DisallowedNameError(Exception):
         """
         Information about the entire name.
         """
-        return self.type.general_info
+        return self.type.general_info.format(**self.meta)
 
 
 class CurableError(DisallowedNameError):
@@ -160,8 +161,9 @@ class CurableError(DisallowedNameError):
                  type: CurableErrorType,
                  index: int,
                  disallowed: str,
-                 suggested: str):
-        super().__init__(type)
+                 suggested: str,
+                 meta: Dict[str, str] = {}):
+        super().__init__(type, meta)
         self.type = type
         self.index = index
         self.disallowed = disallowed
@@ -178,6 +180,7 @@ class CurableError(DisallowedNameError):
         return self.type.disallowed_sequence_info.format(
             disallowed=self.disallowed,
             suggested=self.suggested,
+            **self.meta,
         )
 
 
@@ -186,8 +189,9 @@ class NormalizationTransformation(CurableError):
                  type: NormalizationTransformationType,
                  index: int,
                  disallowed: str,
-                 suggested: str):
-        super().__init__(type, index, disallowed, suggested)
+                 suggested: str,
+                 meta: Dict[str, str] = {}):
+        super().__init__(type, index, disallowed, suggested, meta)
         self.type = type
 
 
@@ -633,8 +637,26 @@ def post_check_group_whole(cps: List[int], is_greek: List[bool]) -> Optional[Uni
     is_greek[0] = g['name'] == 'Greek'
     return (
         post_check_group(g, cps_no_fe0f, cps)
-        or post_check_whole(unique)
+        or post_check_whole(g, unique)
     )
+
+
+def meta_for_conf_mixed(g, cp):
+    s1 = [g['name'] for g in NORMALIZATION.groups if cp in g['V']]
+    s1 = s1[0] if s1 else None
+    s2 = g['name']
+    if s1 is not None:
+        return {
+            'scripts': f'{s1}/{s2}',
+            'script1': f' from the {s1} script',
+            'script2': f' from the {s2} script',
+        }
+    else:
+        return {
+            'scripts': f'{s2} plus other scripts',
+            'script1': '',
+            'script2': f' from the {s2} script',
+        }
 
 
 def determine_group(unique: Iterable[int], cps: List[int]) -> Tuple[Optional[List[Dict]], Optional[CurableError]]:
@@ -655,6 +677,7 @@ def determine_group(unique: Iterable[int], cps: List[int]) -> Tuple[Optional[Lis
                     index=cps.index(cp),
                     disallowed=chr(cp),
                     suggested='',
+                    meta=meta_for_conf_mixed(groups[0], cp),
                 )
         groups = gs
         if len(groups) == 1:
@@ -671,6 +694,7 @@ def post_check_group(g, cps: List[int], input: List[int]) -> Optional[Union[Disa
                 index=input.index(cp),
                 disallowed=chr(cp),
                 suggested='',
+                meta=meta_for_conf_mixed(g, cp),
             )
     if m:
         decomposed = str2cps(NFD(cps2str(cps)))
@@ -690,7 +714,7 @@ def post_check_group(g, cps: List[int], input: List[int]) -> Optional[Union[Disa
             i += 1
 
 
-def post_check_whole(cps: Iterable[int]) -> Optional[DisallowedNameError]:
+def post_check_whole(group, cps: Iterable[int]) -> Optional[DisallowedNameError]:
     # Cannot report error index, operating on unique codepoints.
     # Not reporting disallowed sequence, see below.
     maker = None
@@ -713,7 +737,13 @@ def post_check_whole(cps: Iterable[int]) -> Optional[DisallowedNameError]:
         for g_ind in maker:
             g = NORMALIZATION.groups[g_ind]
             if all(cp in g['V'] for cp in shared):
-                return DisallowedNameError(DisallowedNameErrorType.CONF_WHOLE)
+                return DisallowedNameError(
+                    DisallowedNameErrorType.CONF_WHOLE,
+                    meta={
+                        'script1': group['name'],
+                        'script2': g['name'],
+                    },
+                )
 
 
 def post_check(name: str, label_is_greek: List[bool]) -> Optional[Union[DisallowedNameError, CurableError]]:

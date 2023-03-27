@@ -354,3 +354,21 @@ def test_ens_process_cure():
     ret = ens_process('', do_cure=True)
     assert ret.cured is None
     assert ret.cures is None
+
+
+def test_error_meta():
+    # mixed
+    e: CurableError = ens_process('bitcoin.bitcοin.bi̇tcoin.bitсoin').error
+    assert e.general_info == 'Contains visually confusing characters from multiple scripts (Greek/Latin)'
+    assert e.disallowed_sequence_info == 'This character from the Greek script is disallowed because it is visually confusing with another character from the Latin script'
+    assert e.disallowed == 'ο'
+
+    # whole
+    e = ens_process('0x.0χ.0х').error
+    assert e.general_info == 'Contains visually confusing characters from Cyrillic and Latin scripts'
+
+    # unknown script for character
+    c = chr(771)
+    e: CurableError = ens_process(f'bitcoin.bitcin.bi̇tcin.bitсin{c}').error
+    assert e.general_info == 'Contains visually confusing characters from multiple scripts (Latin plus other scripts)'
+    assert e.disallowed_sequence_info == 'This character is disallowed because it is visually confusing with another character from the Latin script'
