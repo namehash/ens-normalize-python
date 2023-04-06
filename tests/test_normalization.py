@@ -321,16 +321,6 @@ def test_str_repr():
     assert repr(e) == 'CurableError(code="UNDERSCORE", index=1, disallowed="_", suggested="")'
 
 
-def test_pickle_cache():
-    pickle_path = os.path.join(os.path.expanduser('~'), '.cache', 'ens_normalize', 'normalization_data.pkl')
-    if os.path.exists(pickle_path):
-        os.remove(pickle_path)
-    # initial load
-    ens_normalize_module.normalization.load_normalization_data()
-    # load from cache
-    ens_normalize_module.normalization.load_normalization_data()
-
-
 def test_ens_cure():
     assert ens_cure('Ab') == 'ab'
     assert ens_cure('a_b') == 'ab'

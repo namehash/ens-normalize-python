@@ -5,7 +5,7 @@ const package_json = JSON.parse(await readFile("package.json"));
 const COMMIT_HASH = package_json["dependencies"]["@adraffy/ens-normalize"].replace("github:adraffy/ens-normalize.js#", "");
 
 const SPEC_URL = "https://raw.githubusercontent.com/adraffy/ens-normalize.js/" + COMMIT_HASH + "/derive/output/spec.json"
-const SPEC_PATH = "../../ens_normalize/spec.json";
+const SPEC_PATH = "spec.json";
 
 const TESTS_URL = "https://raw.githubusercontent.com/adraffy/ens-normalize.js/" + COMMIT_HASH + "/validate/tests.json"
 const TESTS_PATH = "../../tests/ens-normalize-tests.json";

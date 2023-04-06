@@ -2,3 +2,6 @@ __pycache__
 .pytest_cache
 dist
 node_modules
+.DS_Store
+.vscode
+spec.json

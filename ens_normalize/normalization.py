@@ -9,7 +9,7 @@ from pyunormalize import NFC, NFD, UNICODE_VERSION
 import warnings
 
 
-SPEC_PATH = os.path.join(os.path.dirname(__file__), 'spec.json')
+SPEC_PICKLE_PATH = os.path.join(os.path.dirname(__file__), 'spec.pickle')
 
 
 class ErrorTypeBase(Enum):
@@ -393,13 +393,8 @@ def group_names_to_ids(groups, whole_map):
 
 
 class NormalizationData:
-    # Increment VERSION when the spec changes
-    # or if the code in this class changes.
-    # It will force the cache to be regenerated.
-    VERSION = 2
-
-    def __init__(self):
-        with open(SPEC_PATH, encoding='utf-8') as f:
+    def __init__(self, spec_json_path: str):
+        with open(spec_json_path, encoding='utf-8') as f:
             spec = json.load(f)
 
         self.version = NormalizationData.VERSION
@@ -422,30 +417,16 @@ class NormalizationData:
         self.emoji_fe0f_lookup = create_emoji_fe0f_lookup([''.join(chr(cp) for cp in cps) for cps in self.emoji])
         self.emoji_regex = regex.compile(create_emoji_regex_pattern([''.join(chr(cp) for cp in cps) for cps in self.emoji]))
 
-def load_normalization_data() -> NormalizationData:
+
+def load_normalization_data_pickle(spec_pickle_path: str) -> NormalizationData:
     """
-    Loads `NormalizationData` from cached pickle file if it exists, otherwise creates it.
-    Pickle is stored in `$HOME/.cache/ens_normalize/normalization_data.pkl`.
-    It contains a version number, so if the version changes, the pickle is recreated.
+    Loads `NormalizationData` from a pickle file.
     """
-    cache_dir = os.path.join(os.path.expanduser('~'), '.cache', 'ens_normalize')
-    os.makedirs(cache_dir, exist_ok=True)
-    cache_path = os.path.join(cache_dir, 'normalization_data.pkl')
-    if os.path.exists(cache_path):
-        with open(cache_path, 'rb') as f:
-            data: NormalizationData = pickle.load(f)
-            if getattr(data, 'version', None) == NormalizationData.VERSION:
-                return data
-    data = NormalizationData()
-    # Python >= 3.8 is required for protocol 5
-    buf = pickle.dumps(data, protocol=5)
-    buf = pickletools.optimize(buf)
-    with open(cache_path, 'wb') as f:
-        f.write(buf)
-    return data
+    with open(spec_pickle_path, 'rb') as f:
+        return pickle.load(f)
 
 
-NORMALIZATION = load_normalization_data()
+NORMALIZATION = load_normalization_data_pickle(SPEC_PICKLE_PATH)
 
 
 def check_spec_unicode_version():
