@@ -3,6 +3,7 @@ import json
 import os
 from ens_normalize import *
 import ens_normalize as ens_normalize_module
+import warnings
 
 
 TESTS_PATH = os.path.join(os.path.dirname(__file__), 'ens-normalize-tests.json')
@@ -372,3 +373,10 @@ def test_error_meta():
     e: CurableError = ens_process(f'bitcoin.bitcin.bi̇tcin.bitсin{c}').error
     assert e.general_info == 'Contains visually confusing characters from multiple scripts (Latin plus other scripts)'
     assert e.disallowed_sequence_info == 'This character is disallowed because it is visually confusing with another character from the Latin script'
+
+
+def test_unicode_version_check(mocker):
+    mocker.patch('ens_normalize.normalization.UNICODE_VERSION', '15.0.1')
+    warnings.filterwarnings('error')
+    with pytest.raises(UnicodeWarning):
+        ens_normalize_module.normalization.check_spec_unicode_version()
