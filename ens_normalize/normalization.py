@@ -1069,15 +1069,19 @@ def ens_normalize(text: str) -> str:
 
 def _ens_cure(text: str) -> Tuple[str, List[CurableError]]:
     cures = []
-    while True:
+    # Protect against infinite loops.
+    # The assumption is that n iterations are enough to cure the input (2n just in case).
+    # +1 is for the last iteration that should raise DisallowedNameError.
+    # All cures currently implemented remove a character so this assumption seems reasonable.
+    for _ in range(2 * len(text) + 1):
         try:
             return ens_normalize(text), cures
         except CurableError as e:
-            new_text = text[:e.index] + e.suggested + text[e.index + len(e.disallowed):]
-            # protect against infinite loops
-            assert new_text != text, 'ens_cure() entered an infinite loop'
-            text = new_text
+            text = text[:e.index] + e.suggested + text[e.index + len(e.disallowed):]
             cures.append(e)
+        # DisallowedNameError is not caught here because it is not curable
+    # this should never happen
+    raise Exception('ens_cure() exceeded max iterations. Please report this as a bug.')
 
 
 def ens_cure(text: str) -> str:

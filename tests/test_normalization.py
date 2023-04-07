@@ -378,5 +378,11 @@ def test_error_meta():
 def test_unicode_version_check(mocker):
     mocker.patch('ens_normalize.normalization.UNICODE_VERSION', '15.0.1')
     warnings.filterwarnings('error')
-    with pytest.raises(UnicodeWarning):
+    with pytest.raises(UnicodeWarning, match=r'Unicode version mismatch'):
         ens_normalize_module.normalization.check_spec_unicode_version()
+
+
+def test_ens_cure_max_iters(mocker):
+    mocker.patch('ens_normalize.normalization.ens_normalize', lambda _: ens_normalize('?'))
+    with pytest.raises(Exception, match=r'ens_cure\(\) exceeded max iterations'):
+        ens_cure('???')
