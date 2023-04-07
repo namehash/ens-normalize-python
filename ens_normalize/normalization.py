@@ -5,7 +5,8 @@ import json
 import os
 import pickle
 import pickletools
-from pyunormalize import NFC, NFD
+from pyunormalize import NFC, NFD, UNICODE_VERSION
+import warnings
 
 
 SPEC_PATH = os.path.join(os.path.dirname(__file__), 'spec.json')
@@ -395,12 +396,14 @@ class NormalizationData:
     # Increment VERSION when the spec changes
     # or if the code in this class changes.
     # It will force the cache to be regenerated.
-    VERSION = 1
+    VERSION = 2
 
     def __init__(self):
         with open(SPEC_PATH, encoding='utf-8') as f:
             spec = json.load(f)
 
+        self.version = NormalizationData.VERSION
+        self.unicode_version: str = spec['unicode']
         self.ignored: Set[int] = set(spec['ignored'])
         self.mapped: Dict[int, List[int]] = {cp_src: mapping for cp_src, mapping in spec['mapped']}
         self.cm: Set[int] = set(spec['cm'])
@@ -431,7 +434,7 @@ def load_normalization_data() -> NormalizationData:
     if os.path.exists(cache_path):
         with open(cache_path, 'rb') as f:
             data: NormalizationData = pickle.load(f)
-            if data.VERSION == NormalizationData.VERSION:
+            if getattr(data, 'version', None) == NormalizationData.VERSION:
                 return data
     data = NormalizationData()
     # Python >= 3.8 is required for protocol 5
@@ -443,6 +446,19 @@ def load_normalization_data() -> NormalizationData:
 
 
 NORMALIZATION = load_normalization_data()
+
+
+def check_spec_unicode_version():
+    if not NORMALIZATION.unicode_version.startswith(UNICODE_VERSION):
+        warnings.warn(
+            f'Unicode version mismatch: '
+            f'pyunormalize is using {UNICODE_VERSION}, '
+            f'but the ENS Normalization spec is for {NORMALIZATION.unicode_version}',
+            UnicodeWarning,
+        )
+
+
+check_spec_unicode_version()
 
 
 def collapse_valid_tokens(tokens: List[Token]) -> List[Token]:
