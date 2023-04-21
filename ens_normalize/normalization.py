@@ -4,7 +4,6 @@ import re
 import json
 import os
 import pickle
-import pickletools
 from pyunormalize import NFC, NFD, UNICODE_VERSION
 import warnings
 
