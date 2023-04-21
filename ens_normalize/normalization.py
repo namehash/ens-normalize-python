@@ -1,6 +1,6 @@
 from typing import Callable, Dict, List, NamedTuple, Set, Optional, Tuple, Union, Iterable
 from enum import Enum
-import regex
+import re
 import json
 import os
 import pickle
@@ -327,10 +327,10 @@ def add_all_fe0f(emojis: List[str]):
 def create_emoji_regex_pattern(emojis: List[str]) -> str:
     # add all optional fe0f so that we can match emojis with or without it
     emojis = add_all_fe0f(emojis)
-    fe0f = regex.escape('\uFE0F')
+    fe0f = re.escape('\uFE0F')
     def make_emoji(emoji: str) -> str:
         # make FE0F optional
-        return regex.escape(emoji).replace(fe0f, f'{fe0f}?')
+        return re.escape(emoji).replace(fe0f, f'{fe0f}?')
     # sort to match the longest first
     return '|'.join(make_emoji(emoji) for emoji in sorted(emojis, key=len, reverse=True))
 
@@ -415,7 +415,7 @@ class NormalizationData:
         self.cm.remove(CP_FE0F)
 
         self.emoji_fe0f_lookup = create_emoji_fe0f_lookup([''.join(chr(cp) for cp in cps) for cps in self.emoji])
-        self.emoji_regex = regex.compile(create_emoji_regex_pattern([''.join(chr(cp) for cp in cps) for cps in self.emoji]))
+        self.emoji_regex = re.compile(create_emoji_regex_pattern([''.join(chr(cp) for cp in cps) for cps in self.emoji]))
 
 
 def load_normalization_data_pickle(spec_pickle_path: str) -> NormalizationData:
