@@ -397,7 +397,6 @@ class NormalizationData:
         with open(spec_json_path, encoding='utf-8') as f:
             spec = json.load(f)
 
-        self.version = NormalizationData.VERSION
         self.unicode_version: str = spec['unicode']
         self.ignored: Set[int] = set(spec['ignored'])
         self.mapped: Dict[int, List[int]] = {cp_src: mapping for cp_src, mapping in spec['mapped']}
