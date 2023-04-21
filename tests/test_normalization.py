@@ -4,6 +4,8 @@ import os
 from ens_normalize import *
 import ens_normalize as ens_normalize_module
 import warnings
+import pickle
+import pickletools
 
 
 TESTS_PATH = os.path.join(os.path.dirname(__file__), 'ens-normalize-tests.json')
@@ -321,16 +323,6 @@ def test_str_repr():
     assert repr(e) == 'CurableError(code="UNDERSCORE", index=1, disallowed="_", suggested="")'
 
 
-def test_pickle_cache():
-    pickle_path = os.path.join(os.path.expanduser('~'), '.cache', 'ens_normalize', 'normalization_data.pkl')
-    if os.path.exists(pickle_path):
-        os.remove(pickle_path)
-    # initial load
-    ens_normalize_module.normalization.load_normalization_data()
-    # load from cache
-    ens_normalize_module.normalization.load_normalization_data()
-
-
 def test_ens_cure():
     assert ens_cure('Ab') == 'ab'
     assert ens_cure('a_b') == 'ab'
@@ -386,3 +378,11 @@ def test_ens_cure_max_iters(mocker):
     mocker.patch('ens_normalize.normalization.ens_normalize', lambda _: ens_normalize('?'))
     with pytest.raises(Exception, match=r'ens_cure\(\) exceeded max iterations'):
         ens_cure('???')
+
+
+def test_data_creation():
+    data = normalization.NormalizationData(os.path.join(os.path.dirname(__file__), '..', 'tools', 'updater', 'spec.json'))
+    buf1 = pickletools.optimize(pickle.dumps(data, protocol=5))
+    with open(normalization.SPEC_PICKLE_PATH, 'rb') as f:
+        buf2 = f.read()
+    assert buf1 == buf2
