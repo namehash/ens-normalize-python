@@ -210,7 +210,7 @@ ens_process("Nàme🧙‍♂️1⃣.eth",
 
 ## List of all `DisallowedNameError` types
 
-Fatal errors are considered not curable because they may be challenging to describe as a problem with a specific substring.
+Fatal errors are not considered curable because it may be challenging to suggest a specific substring transformation that might resolve the problem.
 
 | `DisallowedNameErrorType` | General info |
 | ------------------------- | ------------ |
