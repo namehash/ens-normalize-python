@@ -230,19 +230,19 @@ Curable errors contain additional information about the disallowed substring and
 | `EMPTY_LABEL` | Contains a disallowed empty label | Empty labels are not allowed, e.g. abc..eth |
 | `CM_START`    | Contains a combining mark in a disallowed position at the start of the label | A combining mark is disallowed at the start of a label |
 | `CM_EMOJI`    | Contains a combining mark in a disallowed position after an emoji | A combining mark is disallowed after an emoji |
-| `DISALLOWED`  | Contains a disallowed sequence | This sequence is disallowed |
+| `DISALLOWED`  | Contains a disallowed character | This character is disallowed |
 | `INVISIBLE`   | Contains a disallowed invisible character | This invisible character is disallowed |
-| `FENCED_LEADING`  | Contains a disallowed sequence at the start of a label | This sequence is disallowed at the start of a label |
+| `FENCED_LEADING`  | Contains a disallowed character at the start of a label | This character is disallowed at the start of a label |
 | `FENCED_MULTI`    | Contains a disallowed consecutive sequence of characters | Characters in this sequence cannot be placed next to each other |
-| `FENCED_TRAILING` | Contains a disallowed sequence at the end of a label | This sequence is disallowed at the end of a label |
-| `CONF_MIXED` | Contains visually confusing characters from multiple scripts ({script1}/{script2}) | This sequence from the {script1} script is disallowed because it is visually confusing with another sequence from the {script2} script |
+| `FENCED_TRAILING` | Contains a disallowed character at the end of a label | This character is disallowed at the end of a label |
+| `CONF_MIXED` | Contains visually confusing characters from multiple scripts ({script1}/{script2}) | This character from the {script1} script is disallowed because it is visually confusing with another character from the {script2} script |
 
 ## List of all normalization transformations
 
 | `NormalizationTransformationType` | General info | Disallowed sequence info |
 | --------------------------------- | ------------ | ------------------------ |
-| `IGNORED`    | Contains a disallowed "ignored" sequence that has been removed | This sequence is ignored during normalization and has been automatically removed |
-| `MAPPED`     | Contains a disallowed sequence that has been replaced by a normalized sequence | This sequence is disallowed and has been automatically replaced by a normalized sequence |
+| `IGNORED`    | Contains a disallowed "ignored" character that has been removed | This character is ignored during normalization and has been automatically removed |
+| `MAPPED`     | Contains a disallowed character that has been replaced by a normalized sequence | This character is disallowed and has been automatically replaced by a normalized sequence |
 | `FE0F`       | Contains a disallowed variant of an emoji which has been replaced by an equivalent normalized emoji | This emoji has been automatically fixed to remove an invisible character |
 | `NFC`        | Contains a disallowed sequence that is not "NFC normalized" which has been replaced by an equivalent normalized sequence | This sequence has been automatically normalized into NFC canonical form |
 
