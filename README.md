@@ -17,7 +17,7 @@
 * normalized name - name that is in normalized form according to the ENS Normalization Standard. This means `name == ens_normalize(name)`.
 * normalizable name - name that is normalized or that can be converted into a normalized name using `ens_normalize`.
 * beautiful name - name that is normalizable and is equal to itself when using `ens_beautify`. This means `name == ens_beautify(name)`.
-* disallowed name - name that is not normalizable. This means `ens_normalize(name)` raises a DisallowedNameError.
+* disallowed name - name that is not normalizable. This means `ens_normalize(name)` raises a `DisallowedNameError`.
 * curable name - name that is normalizable, or a name in the subset of disallowed names that can still be converted into a normalized name using `ens_cure`.
 * fatal error - a `DisallowedNameError` object thrown by `ens_normalize` that contains only general information about the error and no suggested fixes.
 * curable error - a `CurableError` object (inherits from `DisallowedNameError`) thrown by `ens_normalize` that contains information about a suggested potential fix for the error.
