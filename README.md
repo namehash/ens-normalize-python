@@ -6,20 +6,21 @@
 
 * Python implementation of the [ENS Name Normalization Standard](https://github.com/adraffy/ensip-norm/blob/main/draft.md).
   Thanks to [Adraffy](https://github.com/adraffy) for his leadership in coordinating the definition of this standard with the ENS community.
-* Passes **100%** of the [official validation tests](https://github.com/adraffy/ens-normalize.js/tree/main/validate) (validated automatically with pytest, see below).
+* Passes **100%** of the [official validation tests](https://github.com/adraffy/ens-normalize.js/tree/main/validate) (validated automatically with pytest on Linux, MacOS, and Windows, see below for details).
 * Passes an [additional suite of further tests](/tools/updater/update-ens.js#L54) for compatibility with the official [Javascript reference implementation](https://github.com/adraffy/ens-normalize.js) and code testing coverage.
 * Based on [JavaScript implementation version 1.9.0](https://github.com/adraffy/ens-normalize.js/tree/4873fbe6393e970e186ab57860cc59cbbb1fa162).
 
 ## Glossary
 
-* name - a full domain name, e.g. `nick.eth`
-* label - a part of a name separated by a dot, e.g. `nick` and `eth` are labels in `nick.eth`
-* normalized name - name that is already in normalized form according to the ENS Normalization Standard
-* normalizable name - name that is normalized or that can be converted into a normalized name using `ens_normalize`
-* disallowed name - name that is not normalized or normalizable
-* curable name - name that may be disallowed but can still be converted into a normalized name using `ens_cure`
-* fatal error - a `DisallowedNameError` object thrown by `ens_normalize` that contains only general information about the error and no possible fixes
-* curable error - a `CurableError` object (inherits from `DisallowedNameError`) thrown by `ens_normalize` that contains information about a possible fix for the error
+* label - a unicode string that does not contain a `.` (full stop / period) character, e.g.  `nick` or `eth`.
+* name - a series of labels separated by `.` (full stop / period) characters, e.g. `nick.eth`.
+* normalized name - name that is in normalized form according to the ENS Normalization Standard. This means `name == ens_normalize(name)`.
+* normalizable name - name that is normalized or that can be converted into a normalized name using `ens_normalize`.
+* beautiful name - name that is normalizable and is equal to itself when using `ens_beautify`. This means `name == ens_beautify(name)`.
+* disallowed name - name that is not normalizable. This means `ens_normalize(name)` raises a `DisallowedNameError`.
+* curable name - name that is normalizable, or a name in the subset of disallowed names that can still be converted into a normalized name using `ens_cure`.
+* fatal error - a `DisallowedNameError` object thrown by `ens_normalize` that contains only general information about the error and no suggested fixes.
+* curable error - a `CurableError` object (inherits from `DisallowedNameError`) thrown by `ens_normalize` that contains information about a suggested potential fix for the error.
 
 ## Usage
 
@@ -38,10 +39,10 @@ from ens_normalize import ens_normalize
 # output ready for namehash
 ens_normalize('Nick.ETH')
 # 'nick.eth'
-# note: does not enforce .eth TLD 3-character minimum
+# note: ens_normalize does not enforce the .eth TLD 3-character minimum
 ```
 
-Inspect issues with names that cannot be normalized:
+Inspect issues with disallowed names:
 
 ```python
 from ens_normalize import DisallowedNameError
@@ -76,11 +77,11 @@ except DisallowedNameError as e:
         # a suggestion for fixing the first error (there might be more errors)
         print(repr(e.suggested))
         # ''
-        # replacing the disallowed substring with this empty string represents that the disallowed substring should be removed
+        # replacing the disallowed substring with this empty string represents the idea that the disallowed substring is suggested to be removed
 
         # You may be able to fix this error by replacing e.disallowed
         # with e.suggested in the input string.
-        # Fields index, disallowed_sequence_info, disallowed, and suggested are not None only for fixable errors.
+        # Fields index, disallowed_sequence_info, disallowed, and suggested are not None only for curable errors.
         # Other errors might be found even after applying this suggestion.
 ```
 
@@ -102,7 +103,7 @@ ens_cure('0χх0.eth')
 # DisallowedNameError: Contains visually confusing characters that are disallowed
 ```
 
-Format names with fully-qualified emoji:
+Get a beautiful name that is optimized for display:
 
 ```python
 from ens_normalize import ens_beautify
@@ -113,10 +114,10 @@ ens_beautify('1⃣2⃣.eth')
 
 # note: normalization is unchanged:
 # ens_normalize(ens_beautify(x)) == ens_normalize(x)
-# note: in addition to beautifying emojis, ens_beautify converts the character 'ξ' (Greek lowercase 'Xi') to 'Ξ' (Greek uppercase 'Xi', a.k.a. the Ethereum symbol) in labels that contain no other Greek characters
+# note: in addition to beautifying emojis with fully-qualified emoji, ens_beautify converts the character 'ξ' (Greek lowercase 'Xi') to 'Ξ' (Greek uppercase 'Xi', a.k.a. the Ethereum symbol) in labels that contain no other Greek characters
 ```
 
-Generate detailed label analysis:
+Generate detailed name analysis:
 
 ```python
 from ens_normalize import ens_tokenize
@@ -175,7 +176,7 @@ except DisallowedNameError as e:
     # Even if the name is invalid according to the ENS Normalization Standard,
     # we can try to automatically remove disallowed characters.
     try:
-        print(ens_cure(name))
+        print('Cured:', ens_cure(name))
     except DisallowedLabelError as e:
         # The name cannot be automatically fixed.
         print('Fatal error:', e)
@@ -209,7 +210,7 @@ ens_process("Nàme🧙‍♂️1⃣.eth",
 
 ## List of all `DisallowedNameError` types
 
-For fatal errors (not curable), it is challenging to communicate the normalization error as a problem with a specific substring.
+Fatal errors are not considered curable because it may be challenging to suggest a specific substring transformation that might resolve the problem.
 
 | `DisallowedNameErrorType` | General info |
 | ------------------------- | ------------ |
@@ -220,7 +221,7 @@ For fatal errors (not curable), it is challenging to communicate the normalizati
 
 ## List of all `CurableError` types
 
-Curable errors contain additional information about the disallowed substring.
+Curable errors contain additional information about the disallowed substring and a suggestion that might help to cure the name.
 
 | `CurableErrorType` | General info | Disallowed sequence info |
 | ------------------ | ------------ | ------------------------ |
@@ -240,7 +241,7 @@ Curable errors contain additional information about the disallowed substring.
 
 | `NormalizationTransformationType` | General info | Disallowed sequence info |
 | --------------------------------- | ------------ | ------------------------ |
-| `IGNORED`    | Contains disallowed "ignored" characters that have been removed | This character is ignored during normalization and has been automatically removed |
+| `IGNORED`    | Contains a disallowed "ignored" character that has been removed | This character is ignored during normalization and has been automatically removed |
 | `MAPPED`     | Contains a disallowed character that has been replaced by a normalized sequence | This character is disallowed and has been automatically replaced by a normalized sequence |
 | `FE0F`       | Contains a disallowed variant of an emoji which has been replaced by an equivalent normalized emoji | This emoji has been automatically fixed to remove an invisible character |
 | `NFC`        | Contains a disallowed sequence that is not "NFC normalized" which has been replaced by an equivalent normalized sequence | This sequence has been automatically normalized into NFC canonical form |
