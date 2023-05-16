@@ -22,6 +22,10 @@
 * fatal error - a `DisallowedNameError` object thrown by `ens_normalize` that contains only general information about the error and no suggested fixes.
 * curable error - a `CurableError` object (inherits from `DisallowedNameError`) thrown by `ens_normalize` that contains information about a suggested potential fix for the error.
 
+The following Venn diagram is not to scale, but may help to communicate how some of the classifications of names relate to each other conceptually.
+
+![ENS Normalize Venn Diagram](https://namehash.io/images/ENS%20Normalize%20-%20Venn%20Diagram.png  "ENS Normalize Venn Diagram")
+
 ## Usage
 
 The package is available on [pypi](https://pypi.org/project/ens-normalize/)
