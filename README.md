@@ -13,23 +13,25 @@
 ## Glossary
 
 **Foundations**
-* sequence - a Unicode string containing any number of characters.
-* label - a sequence that does not contain a `.` (full stop / period) character, e.g.  `nick` or `eth`.
-* name - a series of labels separated by `.` (full stop / period) characters, e.g. `nick.eth`.
+* **sequence** - a Unicode string containing any number of characters.
+* **label** - a sequence of any length (including 0) that does not contain a `.` (full stop / period) character, e.g.  `abc` or `eth`.
+* **name** - a series of any number of labels (including 0) separated by `.` (full stop / period) characters, e.g. `abc.eth`.
 
 **Names**
-* normalized name - name that is in normalized form according to the ENS Normalization Standard. This means `name == ens_normalize(name)`.
-* normalizable name - name that is normalized or that can be converted into a normalized name using `ens_normalize`.
-* beautiful name - name that is normalizable and is equal to itself when using `ens_beautify`. This means `name == ens_beautify(name)`.
-* disallowed name - name that is not normalizable. This means `ens_normalize(name)` raises a `DisallowedNameError`.
-* curable name - name that is normalizable, or a name in the subset of disallowed names that can still be converted into a normalized name using `ens_cure`.
+* **normalized name** - name that is in normalized form according to the ENS Normalization Standard. This means `name == ens_normalize(name)`. A normalized name always contains at least 1 label. All labels in a normalized name always contain a sequence of at least 1 character.
+* **normalizable name** - name that is normalized or that can be converted into a normalized name using `ens_normalize`.
+* **beautiful name** - name that is normalizable and is equal to itself when using `ens_beautify`. This means `name == ens_beautify(name)`. For all normalizable names `ens_normalize(ens_beautify(name)) == ens_normalize(name)`.
+* **disallowed name** - name that is not normalizable. This means `ens_normalize(name)` raises a `DisallowedNameError`.
+* **curable name** - name that is normalizable, or a name in the subset of disallowed names that can still be converted into a normalized name using `ens_cure`.
+* **empty name** - name that is the empty string. An empty name is disallowed and not curable.
+* **namehashable name** - name that is ready for for use with the ENS `namehash` function. Only normalized and empty names are namehashable.
 
 **Sequences**
-* unnormalized sequence - a sequence from a name that is not in normalized form according to the ENS Normalization Standard.
-* normalization suggestion - a sequence suggested as an in-place replacement for an unnormalized sequence.
-* normalizable sequence - an unnormalized sequence containing a normalization suggestion that is automatically applied using `ens_normalize` or `ens_cure`.
-* curable sequence - an unnormalized sequence containing a normalization suggestion that is automatically applied using `ens_cure`.
-* disallowed sequence - an unnormalized sequence without any normalization suggestion.
+* **unnormalized sequence** - a sequence from a name that is not in normalized form according to the ENS Normalization Standard.
+* **normalization suggestion** - a sequence suggested as an in-place replacement for an unnormalized sequence.
+* **normalizable sequence** - an unnormalized sequence containing a normalization suggestion that is automatically applied using `ens_normalize` or `ens_cure`.
+* **curable sequence** - an unnormalized sequence containing a normalization suggestion that is automatically applied using `ens_cure`.
+* **disallowed sequence** - an unnormalized sequence without any normalization suggestion.
 
 **Exceptions**
 
