@@ -21,7 +21,7 @@
 * **normalized name** - name that is in normalized form according to the ENS Normalization Standard. This means `name == ens_normalize(name)`. A normalized name always contains at least 1 label. All labels in a normalized name always contain a sequence of at least 1 character.
 * **normalizable name** - name that is normalized or that can be converted into a normalized name using `ens_normalize`.
 * **beautiful name** - name that is normalizable and is equal to itself when using `ens_beautify`. This means `name == ens_beautify(name)`. For all normalizable names `ens_normalize(ens_beautify(name)) == ens_normalize(name)`.
-* **disallowed name** - name that is not normalizable. This means `ens_normalize(name)` raises a `DisallowedNameError`.
+* **disallowed name** - name that is not normalizable. This means `ens_normalize(name)` raises a `DisallowedSequence`.
 * **curable name** - name that is normalizable, or a name in the subset of disallowed names that can still be converted into a normalized name using `ens_cure`.
 * **empty name** - name that is the empty string. An empty name is disallowed and not curable.
 * **namehashable name** - name that is ready for for use with the ENS `namehash` function. Only normalized and empty names are namehashable.
@@ -29,17 +29,19 @@
 **Sequences**
 * **unnormalized sequence** - a sequence from a name that is not in normalized form according to the ENS Normalization Standard.
 * **normalization suggestion** - a sequence suggested as an in-place replacement for an unnormalized sequence.
-* **normalizable sequence** - an unnormalized sequence containing a normalization suggestion that is automatically applied using `ens_normalize` or `ens_cure`.
+* **normalizable sequence** - an unnormalized sequence containing a normalization suggestion that is automatically applied using `ens_normalize` and `ens_cure`.
 * **curable sequence** - an unnormalized sequence containing a normalization suggestion that is automatically applied using `ens_cure`.
 * **disallowed sequence** - an unnormalized sequence without any normalization suggestion.
 
 **Exceptions**
 
-| Exception type                | sequence type         | `ens_normalize` handling | `ens_cure` handling      | normalization<br>suggestion | Inherits From         |
-|-------------------------------|-----------------------|--------------------------|--------------------------|-----------------------------|-----------------------|
-| `NormalizationTransformation` | normalizable sequence | ✅ automatically resolves | ✅ automatically resolves | ✅ included                  | `CurableError`        |
-| `CurableError`                | curable sequence      | ❌ throws error           | ✅ automatically resolves | ✅ included                  | `DisallowedNameError` |
-| `DisallowedNameError`         | disallowed sequence   | ❌ throws error           | ❌ throws error           | ❌ none                      | `Exception`           |
+These Python classes are used by the library to communicate information about unnormalized sequences.
+
+| Exception class               |  `ens_normalize` handling  | `ens_cure` handling       | normalization<br>suggestion  | Inherits From         |
+|-------------------------------|----------------------------|---------------------------|------------------------------|-----------------------|
+| `NormalizableSequence`        |  ✅ automatically resolves | ✅ automatically resolves | ✅ included                  | `CurableSequence`     |
+| `CurableSequence`             |  ❌ throws error           | ✅ automatically resolves | ✅ included                  | `DisallowedSequence`  |
+| `DisallowedSequence`          |  ❌ throws error           | ❌ throws error           | ❌ none                      | `Exception`           |
 
 ## Usage
 
@@ -54,7 +56,7 @@ Normalize an ENS name:
 ```python
 from ens_normalize import ens_normalize
 # str -> str
-# raises DisallowedNameError for disallowed names
+# raises DisallowedSequence for disallowed names
 # output ready for namehash
 ens_normalize('Nick.ETH')
 # 'nick.eth'
@@ -64,12 +66,12 @@ ens_normalize('Nick.ETH')
 Inspect issues with disallowed names:
 
 ```python
-from ens_normalize import DisallowedNameError
+from ens_normalize import DisallowedSequence
 # added a hidden "zero width joiner" character
 try:
     ens_normalize('Ni‍ck.ETH')
 # Catch the first disallowed sequence (the name we are attempting to normalize could have more than one).
-except DisallowedNameError as e:
+except DisallowedSequence as e:
     # error code
     print(e.code)
     # INVISIBLE
@@ -78,7 +80,7 @@ except DisallowedNameError as e:
     print(e.general_info)
     # Contains a disallowed invisible character
 
-    if isinstance(e, CurableError):
+    if isinstance(e, CurableSequence):
         # information about the curable sequence
         print(e.disallowed_sequence_info)
         # 'This invisible character is disallowed'
@@ -115,11 +117,11 @@ ens_cure('Ni‍ck?.ETH')
 # ZWJ and '?' are removed, no error is raised
 # note: this function is not a part of the ENS Normalization Standard
 
-# note: might still raise DisallowedNameError for certain names, which cannot be cured, e.g.
+# note: might still raise DisallowedSequence for certain names, which cannot be cured, e.g.
 ens_cure('?')
-# DisallowedNameError: The name is empty
+# DisallowedSequence: The name is empty
 ens_cure('0χх0.eth')
-# DisallowedNameError: Contains visually confusing characters that are disallowed
+# DisallowedSequence: Contains visually confusing characters from Cyrillic and Latin scripts
 ```
 
 Get a beautiful name that is optimized for display:
@@ -158,19 +160,19 @@ ens_tokenize('Nàme‍🧙‍♂.eth')
 For a normalizable name, you can find out how the input is transformed during normalization:
 
 ```python
-from ens_normalize import ens_transformations
+from ens_normalize import ens_normalizations
 # Returns a list of transformations (unnormalized sequence -> normalization suggestion)
 # that have been applied to the input during normalization.
-# NormalizationTransformation has the same fields as CurableError:
+# NormalizableSequence has the same fields as CurableSequence:
 # - code
 # - general_info
 # - disallowed_sequence_info
 # - index
 # - disallowed
 # - suggested
-ens_transformations('Nàme🧙‍♂️.eth')
-# [NormalizationTransformation(code="MAPPED", index=0, disallowed="N", suggested="n"),
-#  NormalizationTransformation(code="FE0F", index=4, disallowed="🧙‍♂️", suggested="🧙‍♂")]
+ens_normalizations('Nàme🧙‍♂️.eth')
+# [NormalizableSequence(code="MAPPED", index=0, disallowed="N", suggested="n"),
+#  NormalizableSequence(code="FE0F", index=4, disallowed="🧙‍♂️", suggested="🧙‍♂")]
 ```
 
 An example normalization workflow:
@@ -186,17 +188,17 @@ try:
      # was the input transformed by the normalization process?
     if name != normalized:
         # Let's check how the input was changed:
-        for t in ens_transformations(name):
+        for t in ens_normalizations(name):
             print(repr(t)) # use repr() to print more information
-        # NormalizationTransformation(code="MAPPED", index=0, disallowed="N", suggested="n")
-        # NormalizationTransformation(code="FE0F", index=4, disallowed="🧙‍♂️", suggested="🧙‍♂")
-        #                              invisible character inside emoji ^
-except DisallowedNameError as e:
+        # NormalizableSequence(code="MAPPED", index=0, disallowed="N", suggested="n")
+        # NormalizableSequence(code="FE0F", index=4, disallowed="🧙‍♂️", suggested="🧙‍♂")
+        #                                       invisible character inside emoji ^
+except DisallowedSequence as e:
     # Even if the name is invalid according to the ENS Normalization Standard,
     # we can try to automatically cure disallowed sequences.
     try:
         print('Cured:', ens_cure(name))
-    except DisallowedNameError as e:
+    except DisallowedSequence as e:
         # The name cannot be automatically cured.
         print('Disallowed name error:', e)
 ```
@@ -210,7 +212,7 @@ ens_process("Nàme🧙‍♂️1⃣.eth",
     do_normalize=True,
     do_beautify=True,
     do_tokenize=True,
-    do_transformations=True,
+    do_normalizations=True,
     do_cure=True,
 )
 # ENSProcessResult(
@@ -220,29 +222,29 @@ ens_process("Nàme🧙‍♂️1⃣.eth",
 #   cured='nàme🧙\u200d♂1⃣.eth',
 #   cures=[], # This is the list of cures that were applied to the input (in this case, none).
 #   error=None, # This is the exception raised by ens_normalize().
-#               # It is a DisallowedNameError or CurableError if the error is curable.
-#   transformations=[
-#     NormalizationTransformation(code="MAPPED", index=0, disallowed="N", suggested="n"),
-#     NormalizationTransformation(code="FE0F", index=4, disallowed="🧙‍♂️", suggested="🧙‍♂")
+#               # It is a DisallowedSequence or CurableSequence if the error is curable.
+#   normalizations=[
+#     NormalizableSequence(code="MAPPED", index=0, disallowed="N", suggested="n"),
+#     NormalizableSequence(code="FE0F", index=4, disallowed="🧙‍♂️", suggested="🧙‍♂")
 #   ])
 ```
 
-## List of all `DisallowedNameError` types
+## List of all `DisallowedSequence` types
 
 Disallowed name errors are not considered curable because it may be challenging to suggest a specific normalization suggestion that might resolve the problem.
 
-| `DisallowedNameErrorType` | General info |
+| `DisallowedSequenceType` | General info |
 | ------------------------- | ------------ |
 | `EMPTY_NAME`   | The name is empty |
 | `NSM_REPEATED` | Contains a repeated non-spacing mark |
 | `NSM_TOO_MANY` | Contains too many consecutive non-spacing marks |
 | `CONF_WHOLE` | Contains visually confusing characters from {script1} and {script2} scripts |
 
-## List of all `CurableError` types
+## List of all `CurableSequence` types
 
 Curable errors contain additional information about the disallowed sequence and a normalization suggestion that might help to cure the name.
 
-| `CurableErrorType` | General info | Disallowed sequence info |
+| `CurableSequenceType` | General info | Disallowed sequence info |
 | ------------------ | ------------ | ------------------------ |
 | `UNDERSCORE`  | Contains an underscore in a disallowed position | An underscore is only allowed at the start of a label |
 | `HYPHEN`      | Contains the sequence '--' in a disallowed position | Hyphens are disallowed at the 2nd and 3rd positions of a label |
@@ -258,7 +260,7 @@ Curable errors contain additional information about the disallowed sequence and 
 
 ## List of all normalization transformations
 
-| `NormalizationTransformationType` | General info | Disallowed sequence info |
+| `NormalizableSequenceType` | General info | Disallowed sequence info |
 | --------------------------------- | ------------ | ------------------------ |
 | `IGNORED`    | Contains a disallowed "ignored" character that has been removed | This character is ignored during normalization and has been automatically removed |
 | `MAPPED`     | Contains a disallowed character that has been replaced by a normalized sequence | This character is disallowed and has been automatically replaced by a normalized sequence |

@@ -11,7 +11,12 @@ import warnings
 SPEC_PICKLE_PATH = os.path.join(os.path.dirname(__file__), 'spec.pickle')
 
 
-class ErrorTypeBase(Enum):
+class DisallowedSequenceTypeBase(Enum):
+    '''
+    Base class for disallowed sequence types.
+    See README: Glossary -> Sequences.
+    '''
+
     def __new__(cls, *args):
         value = len(cls.__members__) + 1
         obj = object.__new__(cls)
@@ -26,7 +31,12 @@ class ErrorTypeBase(Enum):
         return self.name
 
 
-class CurableErrorTypeBase(Enum):
+class CurableSequenceTypeBase(Enum):
+    '''
+    Base class for curable sequence types.
+    See README: Glossary -> Sequences.
+    '''
+
     def __new__(cls, *args):
         value = len(cls.__members__) + 1
         obj = object.__new__(cls)
@@ -42,9 +52,10 @@ class CurableErrorTypeBase(Enum):
         return self.name
 
 
-class DisallowedNameErrorType(ErrorTypeBase):
+class DisallowedSequenceType(DisallowedSequenceTypeBase):
     """
-    The name is disallowed and cannot be normalized.
+    The type of a disallowed sequence.
+    See README: Glossary -> Sequences.
     """
 
     # GENERIC ----------------
@@ -62,9 +73,10 @@ class DisallowedNameErrorType(ErrorTypeBase):
     CONF_WHOLE = "Contains visually confusing characters from {script1} and {script2} scripts"
 
 
-class CurableErrorType(CurableErrorTypeBase):
+class CurableSequenceType(CurableSequenceTypeBase):
     """
-    The name is disallowed but a cure is available.
+    The type of a curable sequence.
+    See README: Glossary -> Sequences.
     """
 
     # GENERIC ----------------
@@ -111,9 +123,10 @@ class CurableErrorType(CurableErrorTypeBase):
                  "This character{script1} is disallowed because it is visually confusing with another character{script2}"
 
 
-class NormalizationTransformationType(CurableErrorTypeBase):
+class NormalizableSequenceType(CurableSequenceTypeBase):
     """
-    The label is allowed but contains a sequence which has been automatically transformed into a normalized form.
+    The type of a normalizable sequence.
+    See README: Glossary -> Sequences.
     """
 
     IGNORED   = "Contains disallowed \"ignored\" characters that have been removed", \
@@ -129,8 +142,13 @@ class NormalizationTransformationType(CurableErrorTypeBase):
                 "This sequence has been automatically normalized into NFC canonical form"
 
 
-class DisallowedNameError(Exception):
-    def __init__(self, type: DisallowedNameErrorType, meta: Dict[str, str] = {}):
+class DisallowedSequence(Exception):
+    '''
+    An unnormalized sequence without any normalization suggestion.
+    See README: Glossary -> Sequences.
+    '''
+
+    def __init__(self, type: DisallowedSequenceType, meta: Dict[str, str] = {}):
         super().__init__(type.general_info)
         self.type = type
         self.meta = meta
@@ -156,9 +174,14 @@ class DisallowedNameError(Exception):
         return self.type.general_info.format(**self.meta)
 
 
-class CurableError(DisallowedNameError):
+class CurableSequence(DisallowedSequence):
+    '''
+    An unnormalized sequence containing a normalization suggestion that is automatically applied using `ens_cure`.
+    See README: Glossary -> Sequences.
+    '''
+
     def __init__(self,
-                 type: CurableErrorType,
+                 type: CurableSequenceType,
                  index: int,
                  disallowed: str,
                  suggested: str,
@@ -184,9 +207,14 @@ class CurableError(DisallowedNameError):
         )
 
 
-class NormalizationTransformation(CurableError):
+class NormalizableSequence(CurableSequence):
+    '''
+    An unnormalized sequence containing a normalization suggestion that is automatically applied using `ens_normalize` and `ens_cure`.
+    See README: Glossary -> Sequences.
+    '''
+
     def __init__(self,
-                 type: NormalizationTransformationType,
+                 type: NormalizableSequenceType,
                  index: int,
                  disallowed: str,
                  suggested: str,
@@ -268,9 +296,9 @@ class ENSProcessResult(NamedTuple):
     beautified: Optional[str]
     tokens: Optional[List[Token]]
     cured: Optional[str]
-    cures: Optional[List[CurableError]]
-    error: Optional[DisallowedNameError]
-    transformations: Optional[List[NormalizationTransformation]]
+    cures: Optional[List[CurableSequence]]
+    error: Optional[DisallowedSequence]
+    normalizations: Optional[List[NormalizableSequence]]
 
 
 def str2cps(text: str) -> List[int]:
@@ -342,6 +370,9 @@ def create_emoji_fe0f_lookup(emojis: List[str]) -> Dict[str, str]:
 
 
 def compute_valid(groups: List[Dict]) -> Set[int]:
+    '''
+    Compute the set of valid codepoints from the spec.json file.
+    '''
     valid = set()
     for g in groups:
         valid.update(g['V'])
@@ -350,6 +381,9 @@ def compute_valid(groups: List[Dict]) -> Set[int]:
 
 
 def read_groups(groups: List[Dict]) -> List[Dict]:
+    '''
+    Read and parse the groups field from the spec.json file.
+    '''
     return [
         {
             'name': g['name'],
@@ -370,18 +404,27 @@ def try_str_to_int(x):
 
 
 def dict_keys_to_int(d):
+    '''
+    Recursively convert dictionary keys to integers (for JSON parsing).
+    '''
     if isinstance(d, dict):
         return {try_str_to_int(k): dict_keys_to_int(v) for k, v in d.items()}
     return d
 
 
 def find_group_id(groups, name):
+    '''
+    Find the index of a group by name.
+    '''
     for i, g in enumerate(groups):
         if g['name'] == name:
             return i
 
 
 def group_names_to_ids(groups, whole_map):
+    '''
+    Convert group names to group ids in the whole_map for faster lookup.
+    '''
     for v in whole_map.values():
         if isinstance(v, dict):
             for k in v['M']:
@@ -506,34 +549,34 @@ def normalize_tokens(tokens: List[Token]) -> List[Token]:
     return collapse_valid_tokens(tokens)
 
 
-def post_check_empty(name: str) -> Optional[Union[DisallowedNameError, CurableError]]:
+def post_check_empty(name: str) -> Optional[Union[DisallowedSequence, CurableSequence]]:
     if len(name) == 0:
-        return DisallowedNameError(DisallowedNameErrorType.EMPTY_NAME)
+        return DisallowedSequence(DisallowedSequenceType.EMPTY_NAME)
     if name[0] == '.':
-        return CurableError(
-            CurableErrorType.EMPTY_LABEL,
+        return CurableSequence(
+            CurableSequenceType.EMPTY_LABEL,
             index=0,
             disallowed='.',
             suggested='',
         )
     if name[-1] == '.':
-        return CurableError(
-            CurableErrorType.EMPTY_LABEL,
+        return CurableSequence(
+            CurableSequenceType.EMPTY_LABEL,
             index=len(name) - 1,
             disallowed='.',
             suggested='',
         )
     i = name.find('..')
     if i >= 0:
-        return CurableError(
-            CurableErrorType.EMPTY_LABEL,
+        return CurableSequence(
+            CurableSequenceType.EMPTY_LABEL,
             index=i,
             disallowed='..',
             suggested='.',
         )
 
 
-def post_check_underscore(label: str) -> Optional[CurableError]:
+def post_check_underscore(label: str) -> Optional[CurableSequence]:
     in_middle = False
     for i, c in enumerate(label):
         if c != '_':
@@ -542,30 +585,30 @@ def post_check_underscore(label: str) -> Optional[CurableError]:
             cnt = 1
             while i + cnt < len(label) and label[i + cnt] == '_':
                 cnt += 1
-            return CurableError(
-                CurableErrorType.UNDERSCORE,
+            return CurableSequence(
+                CurableSequenceType.UNDERSCORE,
                 index=i,
                 disallowed='_' * cnt,
                 suggested='',
             )
 
 
-def post_check_hyphen(label: str) -> Optional[CurableError]:
+def post_check_hyphen(label: str) -> Optional[CurableSequence]:
     if len(label) >= 4 and all(ord(cp) < 0x80 for cp in label) and '-' == label[2] == label[3]:
-        return CurableError(
-            CurableErrorType.HYPHEN,
+        return CurableSequence(
+            CurableSequenceType.HYPHEN,
             index=2,
             disallowed='--',
             suggested='',
         )
 
 
-def post_check_cm_leading_emoji(cps: List[int]) -> Optional[CurableError]:
+def post_check_cm_leading_emoji(cps: List[int]) -> Optional[CurableSequence]:
     for i in range(len(cps)):
         if cps[i] in NORMALIZATION.cm:
             if i == 0:
-                return CurableError(
-                    CurableErrorType.CM_START,
+                return CurableSequence(
+                    CurableSequenceType.CM_START,
                     index=i,
                     disallowed=chr(cps[i]),
                     suggested='',
@@ -574,8 +617,8 @@ def post_check_cm_leading_emoji(cps: List[int]) -> Optional[CurableError]:
                 prev = cps[i - 1]
                 # emojis were replaced with FE0F
                 if prev == CP_FE0F:
-                    return CurableError(
-                        CurableErrorType.CM_EMOJI,
+                    return CurableSequence(
+                        CurableSequenceType.CM_EMOJI,
                         # we cannot report the emoji because it was replaced with FE0F
                         index=i,
                         disallowed=chr(cps[i]),
@@ -583,16 +626,16 @@ def post_check_cm_leading_emoji(cps: List[int]) -> Optional[CurableError]:
                     )
 
 
-def make_fenced_error(cps: List[int], start: int, end: int) -> CurableError:
+def make_fenced_error(cps: List[int], start: int, end: int) -> CurableSequence:
     suggested = ''
     if start == 0:
-        type_ = CurableErrorType.FENCED_LEADING
+        type_ = CurableSequenceType.FENCED_LEADING
     elif end == len(cps):
-        type_ = CurableErrorType.FENCED_TRAILING
+        type_ = CurableSequenceType.FENCED_TRAILING
     else:
-        type_ = CurableErrorType.FENCED_MULTI
+        type_ = CurableSequenceType.FENCED_MULTI
         suggested = chr(cps[start])
-    return CurableError(
+    return CurableSequence(
         type_,
         index=start,
         disallowed=''.join(map(chr, cps[start:end])),
@@ -600,7 +643,7 @@ def make_fenced_error(cps: List[int], start: int, end: int) -> CurableError:
     )
 
 
-def post_check_fenced(cps: List[int]) -> Optional[CurableError]:
+def post_check_fenced(cps: List[int]) -> Optional[CurableSequence]:
     cp = cps[0]
     prev = NORMALIZATION.fenced.get(cp)
     if prev is not None:
@@ -620,7 +663,7 @@ def post_check_fenced(cps: List[int]) -> Optional[CurableError]:
         return make_fenced_error(cps, n - 1, n)
 
 
-def post_check_group_whole(cps: List[int], is_greek: List[bool]) -> Optional[Union[DisallowedNameError, CurableError]]:
+def post_check_group_whole(cps: List[int], is_greek: List[bool]) -> Optional[Union[DisallowedSequence, CurableSequence]]:
     cps_no_fe0f = [cp for cp in cps if cp != CP_FE0F]
     unique = set(cps_no_fe0f)
     # we pass cps with fe0f to align error position with the original input
@@ -637,6 +680,9 @@ def post_check_group_whole(cps: List[int], is_greek: List[bool]) -> Optional[Uni
 
 
 def meta_for_conf_mixed(g, cp):
+    '''
+    Create metadata for the CONF_MIXED error.
+    '''
     s1 = [g['name'] for g in NORMALIZATION.groups if cp in g['V']]
     s1 = s1[0] if s1 else None
     s2 = g['name']
@@ -654,21 +700,21 @@ def meta_for_conf_mixed(g, cp):
         }
 
 
-def determine_group(unique: Iterable[int], cps: List[int]) -> Tuple[Optional[List[Dict]], Optional[CurableError]]:
+def determine_group(unique: Iterable[int], cps: List[int]) -> Tuple[Optional[List[Dict]], Optional[CurableSequence]]:
     groups = NORMALIZATION.groups
     for cp in unique:
         gs = [g for g in groups if cp in g['V']]
         if len(gs) == 0:
             if groups == NORMALIZATION.groups:
-                return None, CurableError(
-                    CurableErrorType.DISALLOWED,
+                return None, CurableSequence(
+                    CurableSequenceType.DISALLOWED,
                     index=cps.index(cp),
                     disallowed=chr(cp),
                     suggested='',
                 )
             else:
-                return None, CurableError(
-                    CurableErrorType.CONF_MIXED,
+                return None, CurableSequence(
+                    CurableSequenceType.CONF_MIXED,
                     index=cps.index(cp),
                     disallowed=chr(cp),
                     suggested='',
@@ -680,12 +726,12 @@ def determine_group(unique: Iterable[int], cps: List[int]) -> Tuple[Optional[Lis
     return groups, None
 
 
-def post_check_group(g, cps: List[int], input: List[int]) -> Optional[Union[DisallowedNameError, CurableError]]:
+def post_check_group(g, cps: List[int], input: List[int]) -> Optional[Union[DisallowedSequence, CurableSequence]]:
     v, m = g['V'], g['M']
     for cp in cps:
         if cp not in v:
-            return CurableError(
-                CurableErrorType.CONF_MIXED,
+            return CurableSequence(
+                CurableSequenceType.CONF_MIXED,
                 index=input.index(cp),
                 disallowed=chr(cp),
                 suggested='',
@@ -700,18 +746,17 @@ def post_check_group(g, cps: List[int], input: List[int]) -> Optional[Union[Disa
                 j = i + 1
                 while j < e and decomposed[j] in NORMALIZATION.nsm:
                     if j - i + 1 > NORMALIZATION.nsm_max:
-                        return DisallowedNameError(DisallowedNameErrorType.NSM_TOO_MANY)
+                        return DisallowedSequence(DisallowedSequenceType.NSM_TOO_MANY)
                     for k in range(i, j):
                         if decomposed[k] == decomposed[j]:
-                            return DisallowedNameError(DisallowedNameErrorType.NSM_REPEATED)
+                            return DisallowedSequence(DisallowedSequenceType.NSM_REPEATED)
                     j += 1
                 i = j
             i += 1
 
 
-def post_check_whole(group, cps: Iterable[int]) -> Optional[DisallowedNameError]:
+def post_check_whole(group, cps: Iterable[int]) -> Optional[DisallowedSequence]:
     # Cannot report error index, operating on unique codepoints.
-    # Not reporting disallowed sequence, see below.
     maker = None
     shared = []
     for cp in cps:
@@ -732,8 +777,8 @@ def post_check_whole(group, cps: Iterable[int]) -> Optional[DisallowedNameError]
         for g_ind in maker:
             g = NORMALIZATION.groups[g_ind]
             if all(cp in g['V'] for cp in shared):
-                return DisallowedNameError(
-                    DisallowedNameErrorType.CONF_WHOLE,
+                return DisallowedSequence(
+                    DisallowedSequenceType.CONF_WHOLE,
                     meta={
                         'script1': group['name'],
                         'script2': g['name'],
@@ -741,7 +786,7 @@ def post_check_whole(group, cps: Iterable[int]) -> Optional[DisallowedNameError]
                 )
 
 
-def post_check(name: str, label_is_greek: List[bool]) -> Optional[Union[DisallowedNameError, CurableError]]:
+def post_check(name: str, label_is_greek: List[bool]) -> Optional[Union[DisallowedSequence, CurableSequence]]:
     # name has emojis replaced with a single FE0F
     e = post_check_empty(name)
     if e is not None:
@@ -762,7 +807,7 @@ def post_check(name: str, label_is_greek: List[bool]) -> Optional[Union[Disallow
         label_is_greek.append(is_greek[0])
         if e is not None:
             # post_checks are called on a single label and need an offset
-            if isinstance(e, CurableError):
+            if isinstance(e, CurableSequence): # or NormalizableSequence because of inheritance
                 e.index = label_offset + e.index if e.index is not None else None
             return e
         label_offset += len(label) + 1
@@ -770,7 +815,7 @@ def post_check(name: str, label_is_greek: List[bool]) -> Optional[Union[Disallow
     return None
 
 
-def find_normalization_transformations(tokens: List[Token]) -> List[NormalizationTransformation]:
+def find_normalizations(tokens: List[Token]) -> List[NormalizableSequence]:
     warnings = []
     warning = None
     start = 0
@@ -778,23 +823,23 @@ def find_normalization_transformations(tokens: List[Token]) -> List[Normalizatio
     suggestion = None
     for tok in tokens:
         if tok.type == TY_MAPPED:
-            warning = NormalizationTransformationType.MAPPED
+            warning = NormalizableSequenceType.MAPPED
             disallowed = chr(tok.cp)
             suggestion = cps2str(tok.cps)
             scanned = 1
         elif tok.type == TY_IGNORED:
-            warning = NormalizationTransformationType.IGNORED
+            warning = NormalizableSequenceType.IGNORED
             disallowed = chr(tok.cp)
             suggestion = ''
             scanned = 1
         elif tok.type == TY_EMOJI:
             if tok.input != tok.cps:
-                warning = NormalizationTransformationType.FE0F
+                warning = NormalizableSequenceType.FE0F
                 disallowed = cps2str(tok.input)
                 suggestion = cps2str(tok.cps)
             scanned = len(tok.input)
         elif tok.type == TY_NFC:
-            warning = NormalizationTransformationType.NFC
+            warning = NormalizableSequenceType.NFC
             disallowed = cps2str(tok.input)
             suggestion = cps2str(tok.cps)
             scanned = len(tok.input)
@@ -803,7 +848,7 @@ def find_normalization_transformations(tokens: List[Token]) -> List[Normalizatio
         else:  # TY_STOP
             scanned = 1
         if warning is not None:
-            warnings.append(NormalizationTransformation(warning, start, disallowed, suggestion))
+            warnings.append(NormalizableSequence(warning, start, disallowed, suggestion))
             warning = None
         start += scanned
     return warnings
@@ -856,7 +901,7 @@ def ens_process(input: str,
                 do_normalize: bool = False,
                 do_beautify: bool = False,
                 do_tokenize: bool = False,
-                do_transformations: bool = False,
+                do_normalizations: bool = False,
                 do_cure: bool = False) -> ENSProcessResult:
     """
     Used to compute
@@ -864,7 +909,7 @@ def ens_process(input: str,
     - `ens_normalize`
     - `ens_beautify`
     - `ens_tokenize`
-    - `ens_transformations`
+    - `ens_normalizations`
     - `ens_cure`
 
     in one go.
@@ -874,9 +919,9 @@ def ens_process(input: str,
     - `beautified`: beautified name or `None` if input cannot be normalized or `do_beautify` is `False`
     - `tokens`: list of `Token` objects or `None` if `do_tokenize` is `False`
     - `cured`: cured name or `None` if input cannot be cured or `do_cure` is `False`
-    - `cures`: list of fixed `CurableError` objects or `None` if input cannot be cured or `do_cure` is `False`
-    - `error`: `DisallowedNameError` or `CurableError` or `None` if input is valid
-    - `transformations`: list of `NormalizationTransformation` objects or `None` if `do_transformations` is `False`
+    - `cures`: list of fixed `CurableSequence` objects or `None` if input cannot be cured or `do_cure` is `False`
+    - `error`: `DisallowedSequence` or `CurableSequence` or `None` if input is valid
+    - `normalizations`: list of `NormalizableSequence` objects or `None` if `do_normalizations` is `False`
     """
     tokens: List[Token] = []
     error = None
@@ -937,10 +982,10 @@ def ens_process(input: str,
             ))
             continue
 
-        error = error or CurableError(
-            CurableErrorType.INVISIBLE
+        error = error or CurableSequence(
+            CurableSequenceType.INVISIBLE
             if c in ('\u200d', '\u200c')
-            else CurableErrorType.DISALLOWED,
+            else CurableSequenceType.DISALLOWED,
             index=input_cur - 1,
             disallowed=c,
             suggested='',
@@ -952,7 +997,7 @@ def ens_process(input: str,
 
     tokens = normalize_tokens(tokens)
 
-    transformations = find_normalization_transformations(tokens) if do_transformations else None
+    normalizations = find_normalizations(tokens) if do_normalizations else None
 
     if error is None:
         # run post checks
@@ -961,7 +1006,7 @@ def ens_process(input: str,
         # will be set by post_check()
         label_is_greek = []
         error = post_check(emojis_as_fe0f, label_is_greek)
-        if isinstance(error, CurableError):
+        if isinstance(error, CurableSequence): # or NormalizableSequence because of inheritance
             offset_err_start(error, tokens)
 
     # else:
@@ -983,7 +1028,7 @@ def ens_process(input: str,
     if do_cure:
         try:
             cured, cures = _ens_cure(input)
-        except DisallowedNameError:
+        except DisallowedSequence:
             pass
 
     return ENSProcessResult(
@@ -993,11 +1038,11 @@ def ens_process(input: str,
         cured,
         cures,
         error,
-        transformations,
+        normalizations,
     )
 
 
-def offset_err_start(err: Optional[CurableError], tokens: List[Token]):
+def offset_err_start(err: Optional[CurableSequence], tokens: List[Token]):
     """
     Output of post_check() is not input aligned.
     This function offsets the error index (in-place) to match the input characters.
@@ -1038,7 +1083,7 @@ def ens_normalize(text: str) -> str:
     """
     Apply ENS normalization to a string.
 
-    Raises DisallowedNameError if the input cannot be normalized.
+    Raises DisallowedSequence if the input cannot be normalized.
     """
     res = ens_process(text, do_normalize=True)
     if res.error is not None:
@@ -1046,21 +1091,21 @@ def ens_normalize(text: str) -> str:
     return res.normalized
 
 
-def _ens_cure(text: str) -> Tuple[str, List[CurableError]]:
+def _ens_cure(text: str) -> Tuple[str, List[CurableSequence]]:
     cures = []
     # Protect against infinite loops.
     # The assumption is that n iterations are enough to cure the input (2n just in case).
-    # +1 is for the last iteration that should raise DisallowedNameError.
+    # +1 is for the last iteration that should raise DisallowedSequence.
     # All cures currently implemented remove a character so this assumption seems reasonable.
     for _ in range(2 * len(text) + 1):
         try:
             return ens_normalize(text), cures
-        except CurableError as e:
+        except CurableSequence as e:
             text = text[:e.index] + e.suggested + text[e.index + len(e.disallowed):]
             cures.append(e)
-        # DisallowedNameError is not caught here because it is not curable
+        # DisallowedSequence is not caught here because it is not curable
     # this should never happen
-    raise Exception('ens_cure() exceeded max iterations. Please report this as a bug.')
+    raise Exception('ens_cure() exceeded max iterations. Please report this as a bug along with the input string.')
 
 
 def ens_cure(text: str) -> str:
@@ -1068,7 +1113,7 @@ def ens_cure(text: str) -> str:
     Apply ENS normalization to a string. If the result is not normalized then this function
     will try to make the input normalized by removing all disallowed characters.
 
-    Raises `DisallowedNameError` if one is encountered and cannot be cured.
+    Raises `DisallowedSequence` if one is encountered and cannot be cured.
     """
     return _ens_cure(text)[0]
 
@@ -1077,7 +1122,7 @@ def ens_beautify(text: str) -> str:
     """
     Apply ENS normalization with beautification to a string.
 
-    Raises DisallowedNameError if the input cannot be normalized.
+    Raises DisallowedSequence if the input cannot be normalized.
     """
     res = ens_process(text, do_beautify=True)
     if res.error is not None:
@@ -1117,17 +1162,17 @@ def ens_tokenize(input: str) -> List[Token]:
     return ens_process(input, do_tokenize=True).tokens
 
 
-def ens_transformations(input: str) -> List[NormalizationTransformation]:
+def ens_normalizations(input: str) -> List[NormalizableSequence]:
     """
-    This function returns a list of `NormalizationTransformation` objects
+    This function returns a list of `NormalizableSequence` objects
     that describe the modifications applied by ENS normalization to the input string.
 
-    Raises DisallowedNameError if the input cannot be normalized.
+    Raises DisallowedSequence if the input cannot be normalized.
     """
-    res = ens_process(input, do_transformations=True)
+    res = ens_process(input, do_normalizations=True)
     if res.error is not None:
         raise res.error
-    return res.transformations
+    return res.normalizations
 
 
 def is_ens_normalized(name: str) -> bool:
