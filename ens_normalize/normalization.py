@@ -43,9 +43,9 @@ class CurableSequenceTypeBase(Enum):
         obj._value_ = value
         return obj
 
-    def __init__(self, general_info: str, disallowed_sequence_info: str):
+    def __init__(self, general_info: str, sequence_info: str):
         self.general_info = general_info
-        self.disallowed_sequence_info = disallowed_sequence_info
+        self.sequence_info = sequence_info
 
     @property
     def code(self) -> str:
@@ -183,25 +183,25 @@ class CurableSequence(DisallowedSequence):
     def __init__(self,
                  type: CurableSequenceType,
                  index: int,
-                 disallowed: str,
+                 sequence: str,
                  suggested: str,
                  meta: Dict[str, str] = {}):
         super().__init__(type, meta)
         self.type = type
         self.index = index
-        self.disallowed = disallowed
+        self.sequence = sequence
         self.suggested = suggested
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}(code="{self.type.code}", index={self.index}, disallowed="{self.disallowed}", suggested="{self.suggested}")'
+        return f'{self.__class__.__name__}(code="{self.type.code}", index={self.index}, sequence="{self.sequence}", suggested="{self.suggested}")'
 
     @property
-    def disallowed_sequence_info(self) -> str:
+    def sequence_info(self) -> str:
         """
         Information about the disallowed sequence.
         """
-        return self.type.disallowed_sequence_info.format(
-            disallowed=self.disallowed,
+        return self.type.sequence_info.format(
+            sequence=self.sequence,
             suggested=self.suggested,
             **self.meta,
         )
@@ -216,10 +216,10 @@ class NormalizableSequence(CurableSequence):
     def __init__(self,
                  type: NormalizableSequenceType,
                  index: int,
-                 disallowed: str,
+                 sequence: str,
                  suggested: str,
                  meta: Dict[str, str] = {}):
-        super().__init__(type, index, disallowed, suggested, meta)
+        super().__init__(type, index, sequence, suggested, meta)
         self.type = type
 
 
@@ -556,14 +556,14 @@ def post_check_empty(name: str) -> Optional[Union[DisallowedSequence, CurableSeq
         return CurableSequence(
             CurableSequenceType.EMPTY_LABEL,
             index=0,
-            disallowed='.',
+            sequence='.',
             suggested='',
         )
     if name[-1] == '.':
         return CurableSequence(
             CurableSequenceType.EMPTY_LABEL,
             index=len(name) - 1,
-            disallowed='.',
+            sequence='.',
             suggested='',
         )
     i = name.find('..')
@@ -571,7 +571,7 @@ def post_check_empty(name: str) -> Optional[Union[DisallowedSequence, CurableSeq
         return CurableSequence(
             CurableSequenceType.EMPTY_LABEL,
             index=i,
-            disallowed='..',
+            sequence='..',
             suggested='.',
         )
 
@@ -588,7 +588,7 @@ def post_check_underscore(label: str) -> Optional[CurableSequence]:
             return CurableSequence(
                 CurableSequenceType.UNDERSCORE,
                 index=i,
-                disallowed='_' * cnt,
+                sequence='_' * cnt,
                 suggested='',
             )
 
@@ -598,7 +598,7 @@ def post_check_hyphen(label: str) -> Optional[CurableSequence]:
         return CurableSequence(
             CurableSequenceType.HYPHEN,
             index=2,
-            disallowed='--',
+            sequence='--',
             suggested='',
         )
 
@@ -610,7 +610,7 @@ def post_check_cm_leading_emoji(cps: List[int]) -> Optional[CurableSequence]:
                 return CurableSequence(
                     CurableSequenceType.CM_START,
                     index=i,
-                    disallowed=chr(cps[i]),
+                    sequence=chr(cps[i]),
                     suggested='',
                 )
             else:
@@ -621,7 +621,7 @@ def post_check_cm_leading_emoji(cps: List[int]) -> Optional[CurableSequence]:
                         CurableSequenceType.CM_EMOJI,
                         # we cannot report the emoji because it was replaced with FE0F
                         index=i,
-                        disallowed=chr(cps[i]),
+                        sequence=chr(cps[i]),
                         suggested='',
                     )
 
@@ -638,7 +638,7 @@ def make_fenced_error(cps: List[int], start: int, end: int) -> CurableSequence:
     return CurableSequence(
         type_,
         index=start,
-        disallowed=''.join(map(chr, cps[start:end])),
+        sequence=''.join(map(chr, cps[start:end])),
         suggested=suggested,
     )
 
@@ -709,14 +709,14 @@ def determine_group(unique: Iterable[int], cps: List[int]) -> Tuple[Optional[Lis
                 return None, CurableSequence(
                     CurableSequenceType.DISALLOWED,
                     index=cps.index(cp),
-                    disallowed=chr(cp),
+                    sequence=chr(cp),
                     suggested='',
                 )
             else:
                 return None, CurableSequence(
                     CurableSequenceType.CONF_MIXED,
                     index=cps.index(cp),
-                    disallowed=chr(cp),
+                    sequence=chr(cp),
                     suggested='',
                     meta=meta_for_conf_mixed(groups[0], cp),
                 )
@@ -733,7 +733,7 @@ def post_check_group(g, cps: List[int], input: List[int]) -> Optional[Union[Disa
             return CurableSequence(
                 CurableSequenceType.CONF_MIXED,
                 index=input.index(cp),
-                disallowed=chr(cp),
+                sequence=chr(cp),
                 suggested='',
                 meta=meta_for_conf_mixed(g, cp),
             )
@@ -987,7 +987,7 @@ def ens_process(input: str,
             if c in ('\u200d', '\u200c')
             else CurableSequenceType.DISALLOWED,
             index=input_cur - 1,
-            disallowed=c,
+            sequence=c,
             suggested='',
         )
 
@@ -1101,7 +1101,7 @@ def _ens_cure(text: str) -> Tuple[str, List[CurableSequence]]:
         try:
             return ens_normalize(text), cures
         except CurableSequence as e:
-            text = text[:e.index] + e.suggested + text[e.index + len(e.disallowed):]
+            text = text[:e.index] + e.suggested + text[e.index + len(e.sequence):]
             cures.append(e)
         # DisallowedSequence is not caught here because it is not curable
     # this should never happen

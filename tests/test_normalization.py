@@ -169,7 +169,7 @@ def test_ens_normalization_reason(label, error, start, disallowed, suggested):
         assert res_error.type == error
         if isinstance(error, CurableSequence):
             assert res_error.index == start
-            assert res_error.disallowed == disallowed
+            assert res_error.sequence == disallowed
             assert res_error.suggested == suggested
 
 
@@ -209,7 +209,7 @@ def test_ens_norm_error_pos(text):
     ret = ens_process(text + '_')
     assert ret.error.type == CurableSequenceType.UNDERSCORE
     assert ret.error.index == len(text)
-    assert ret.error.disallowed == '_'
+    assert ret.error.sequence == '_'
     assert ret.error.suggested == ''
 
 
@@ -218,7 +218,7 @@ def test_ens_norm_error_pos_disallowed():
     ret = ens_process(t + '?')
     assert ret.error.type == CurableSequenceType.DISALLOWED
     assert ret.error.index == len(t)
-    assert ret.error.disallowed == '?'
+    assert ret.error.sequence == '?'
     assert ret.error.suggested == ''
 
 
@@ -228,7 +228,7 @@ def test_ens_norm_error_pos_nfc():
     e = ret.normalizations[0]
     assert e.type == NormalizableSequenceType.NFC
     assert e.index == len(t)
-    assert e.disallowed == 'a\u0300'
+    assert e.sequence == 'a\u0300'
     assert e.suggested == 'à'
 
 
@@ -246,25 +246,25 @@ def test_ens_warnings_many():
     e = warnings[0]
     assert e.type == NormalizableSequenceType.IGNORED
     assert e.index == 1
-    assert e.disallowed == chr(173)
+    assert e.sequence == chr(173)
     assert e.suggested == ''
 
     e = warnings[1]
     assert e.type == NormalizableSequenceType.MAPPED
     assert e.index == 3
-    assert e.disallowed == 'A'
+    assert e.sequence == 'A'
     assert e.suggested == 'a'
 
     e = warnings[2]
     assert e.type == NormalizableSequenceType.FE0F
     assert e.index == 6
-    assert e.disallowed == '🚴‍♂️'
+    assert e.sequence == '🚴‍♂️'
     assert e.suggested == '🚴‍♂'
 
     e = warnings[3]
     assert e.type == NormalizableSequenceType.NFC
     assert e.index == 11
-    assert e.disallowed == 'a\u0300'
+    assert e.sequence == 'a\u0300'
     assert e.suggested == 'à'
 
 
@@ -275,21 +275,21 @@ def test_throws():
         ens_normalize(t)
     assert e.value.type == CurableSequenceType.UNDERSCORE
     assert e.value.index == 1
-    assert e.value.disallowed == '_'
+    assert e.value.sequence == '_'
     assert e.value.suggested == ''
 
     with pytest.raises(CurableSequence) as e:
         ens_beautify(t)
     assert e.value.type == CurableSequenceType.UNDERSCORE
     assert e.value.index == 1
-    assert e.value.disallowed == '_'
+    assert e.value.sequence == '_'
     assert e.value.suggested == ''
 
     with pytest.raises(CurableSequence) as e:
         ens_normalizations(t)
     assert e.value.type == CurableSequenceType.UNDERSCORE
     assert e.value.index == 1
-    assert e.value.disallowed == '_'
+    assert e.value.sequence == '_'
     assert e.value.suggested == ''
 
 
@@ -307,13 +307,13 @@ def test_normalization_error_object():
     except CurableSequence as e:
         assert e.type == CurableSequenceType.UNDERSCORE
         assert e.index == 1
-        assert e.disallowed == '_'
+        assert e.sequence == '_'
         assert e.suggested == ''
         assert e.code == CurableSequenceType.UNDERSCORE.code
         assert e.general_info == CurableSequenceType.UNDERSCORE.general_info
-        assert e.disallowed_sequence_info == CurableSequenceType.UNDERSCORE.disallowed_sequence_info
+        assert e.sequence_info == CurableSequenceType.UNDERSCORE.sequence_info
         assert str(e) == e.general_info
-        assert repr(e) == 'CurableSequence(code="UNDERSCORE", index=1, disallowed="_", suggested="")'
+        assert repr(e) == 'CurableSequence(code="UNDERSCORE", index=1, sequence="_", suggested="")'
     try:
         ens_normalize('')
     except DisallowedSequence as e:
@@ -333,7 +333,7 @@ def test_str_repr():
     e = ens_process('a_').error
 
     assert str(e) == CurableSequenceType.UNDERSCORE.general_info
-    assert repr(e) == 'CurableSequence(code="UNDERSCORE", index=1, disallowed="_", suggested="")'
+    assert repr(e) == 'CurableSequence(code="UNDERSCORE", index=1, sequence="_", suggested="")'
 
 
 def test_ens_cure():
@@ -366,8 +366,8 @@ def test_error_meta():
     # mixed
     e: CurableSequence = ens_process('bitcoin.bitcοin.bi̇tcoin.bitсoin').error
     assert e.general_info == 'Contains visually confusing characters from multiple scripts (Greek/Latin)'
-    assert e.disallowed_sequence_info == 'This character from the Greek script is disallowed because it is visually confusing with another character from the Latin script'
-    assert e.disallowed == 'ο'
+    assert e.sequence_info == 'This character from the Greek script is disallowed because it is visually confusing with another character from the Latin script'
+    assert e.sequence == 'ο'
 
     # whole
     e = ens_process('0x.0χ.0х').error
@@ -377,7 +377,7 @@ def test_error_meta():
     c = chr(771)
     e: CurableSequence = ens_process(f'bitcoin.bitcin.bi̇tcin.bitсin{c}').error
     assert e.general_info == 'Contains visually confusing characters from multiple scripts (Latin plus other scripts)'
-    assert e.disallowed_sequence_info == 'This character is disallowed because it is visually confusing with another character from the Latin script'
+    assert e.sequence_info == 'This character is disallowed because it is visually confusing with another character from the Latin script'
 
 
 def test_unicode_version_check(mocker):

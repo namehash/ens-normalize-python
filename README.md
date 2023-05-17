@@ -82,7 +82,7 @@ except DisallowedSequence as e:
 
     if isinstance(e, CurableSequence):
         # information about the curable sequence
-        print(e.disallowed_sequence_info)
+        print(e.sequence_info)
         # 'This invisible character is disallowed'
 
         # starting index of the disallowed sequence in the input string
@@ -92,7 +92,7 @@ except DisallowedSequence as e:
 
         # the disallowed sequence
         # (use repr() to "see" the invisible character)
-        print(repr(e.disallowed))
+        print(repr(e.sequence))
         # '\u200d'
 
         # a normalization suggestion for fixing the disallowed sequence (there might be more disallowed sequences)
@@ -100,9 +100,8 @@ except DisallowedSequence as e:
         # ''
         # replacing the disallowed sequence with this suggestion (an empty string) represents the idea that the disallowed sequence is suggested to be removed
 
-        # You may be able to fix this disallowed sequence by replacing e.disallowed
-        # with e.suggested in the input string.
-        # Fields index, disallowed_sequence_info, disallowed, and suggested are not None only for curable errors.
+        # You may be able to fix this disallowed sequence by replacing e.sequence with e.suggested in the input string.
+        # Fields index, sequence_info, sequence, and suggested are available only for curable errors.
         # Other disallowed sequences might be found even after applying this suggestion.
 ```
 
@@ -166,13 +165,13 @@ from ens_normalize import ens_normalizations
 # NormalizableSequence has the same fields as CurableSequence:
 # - code
 # - general_info
-# - disallowed_sequence_info
+# - sequence_info
 # - index
-# - disallowed
+# - sequence
 # - suggested
 ens_normalizations('Nàme🧙‍♂️.eth')
-# [NormalizableSequence(code="MAPPED", index=0, disallowed="N", suggested="n"),
-#  NormalizableSequence(code="FE0F", index=4, disallowed="🧙‍♂️", suggested="🧙‍♂")]
+# [NormalizableSequence(code="MAPPED", index=0, sequence="N", suggested="n"),
+#  NormalizableSequence(code="FE0F", index=4, sequence="🧙‍♂️", suggested="🧙‍♂")]
 ```
 
 An example normalization workflow:
@@ -190,9 +189,9 @@ try:
         # Let's check how the input was changed:
         for t in ens_normalizations(name):
             print(repr(t)) # use repr() to print more information
-        # NormalizableSequence(code="MAPPED", index=0, disallowed="N", suggested="n")
-        # NormalizableSequence(code="FE0F", index=4, disallowed="🧙‍♂️", suggested="🧙‍♂")
-        #                                       invisible character inside emoji ^
+        # NormalizableSequence(code="MAPPED", index=0, sequence="N", suggested="n")
+        # NormalizableSequence(code="FE0F", index=4, sequence="🧙‍♂️", suggested="🧙‍♂")
+        #                                     invisible character inside emoji ^
 except DisallowedSequence as e:
     # Even if the name is invalid according to the ENS Normalization Standard,
     # we can try to automatically cure disallowed sequences.
@@ -224,8 +223,8 @@ ens_process("Nàme🧙‍♂️1⃣.eth",
 #   error=None, # This is the exception raised by ens_normalize().
 #               # It is a DisallowedSequence or CurableSequence if the error is curable.
 #   normalizations=[
-#     NormalizableSequence(code="MAPPED", index=0, disallowed="N", suggested="n"),
-#     NormalizableSequence(code="FE0F", index=4, disallowed="🧙‍♂️", suggested="🧙‍♂")
+#     NormalizableSequence(code="MAPPED", index=0, sequence="N", suggested="n"),
+#     NormalizableSequence(code="FE0F", index=4, sequence="🧙‍♂️", suggested="🧙‍♂")
 #   ])
 ```
 
@@ -244,7 +243,7 @@ Disallowed name errors are not considered curable because it may be challenging 
 
 Curable errors contain additional information about the disallowed sequence and a normalization suggestion that might help to cure the name.
 
-| `CurableSequenceType` | General info | Disallowed sequence info |
+| `CurableSequenceType` | General info | Sequence info |
 | ------------------ | ------------ | ------------------------ |
 | `UNDERSCORE`  | Contains an underscore in a disallowed position | An underscore is only allowed at the start of a label |
 | `HYPHEN`      | Contains the sequence '--' in a disallowed position | Hyphens are disallowed at the 2nd and 3rd positions of a label |
@@ -260,7 +259,7 @@ Curable errors contain additional information about the disallowed sequence and 
 
 ## List of all normalization transformations
 
-| `NormalizableSequenceType` | General info | Disallowed sequence info |
+| `NormalizableSequenceType` | General info | Sequence info |
 | --------------------------------- | ------------ | ------------------------ |
 | `IGNORED`    | Contains a disallowed "ignored" character that has been removed | This character is ignored during normalization and has been automatically removed |
 | `MAPPED`     | Contains a disallowed character that has been replaced by a normalized sequence | This character is disallowed and has been automatically replaced by a normalized sequence |
