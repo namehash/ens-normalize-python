@@ -24,7 +24,7 @@
 
 The following Venn diagram is not to scale, but may help to communicate how some of the classifications of names relate to each other conceptually.
 
-![ENS Normalize Venn Diagram](https://raw.githubusercontent.com/namehash/ens-normalize-python/main/ENS_Normalize_-_Venn_Diagram.png  "ENS Normalize Venn Diagram")
+![ENS Normalize Venn Diagram](https://raw.githubusercontent.com/namehash/ens-normalize-python/main/docs/ENS_Normalize_-_Venn_Diagram.png  "ENS Normalize Venn Diagram")
 
 ## Usage
 
