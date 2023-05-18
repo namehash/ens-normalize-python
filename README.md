@@ -233,16 +233,14 @@ These Python classes are used by the library to communicate information about un
 | `CurableSequence`             |  ❌ throws error           | ✅ automatically resolves | ✅ included                  | `DisallowedSequence`  |
 | `DisallowedSequence`          |  ❌ throws error           | ❌ throws error           | ❌ none                      | `Exception`           |
 
-### List of all `DisallowedSequence` types
+### List of all `NormalizableSequence` types
 
-Disallowed name errors are not considered curable because it may be challenging to suggest a specific normalization suggestion that might resolve the problem.
-
-| `DisallowedSequenceType` | General info |
-| ------------------------- | ------------ |
-| `EMPTY_NAME`   | The name is empty |
-| `NSM_REPEATED` | Contains a repeated non-spacing mark |
-| `NSM_TOO_MANY` | Contains too many consecutive non-spacing marks |
-| `CONF_WHOLE` | Contains visually confusing characters from {script1} and {script2} scripts |
+| `NormalizableSequenceType` | General info | Sequence info |
+| --------------------------------- | ------------ | ------------------------ |
+| `IGNORED`    | Contains a disallowed "ignored" character that has been removed | This character is ignored during normalization and has been automatically removed |
+| `MAPPED`     | Contains a disallowed character that has been replaced by a normalized sequence | This character is disallowed and has been automatically replaced by a normalized sequence |
+| `FE0F`       | Contains a disallowed variant of an emoji which has been replaced by an equivalent normalized emoji | This emoji has been automatically fixed to remove an invisible character |
+| `NFC`        | Contains a disallowed sequence that is not "NFC normalized" which has been replaced by an equivalent normalized sequence | This sequence has been automatically normalized into NFC canonical form |
 
 ### List of all `CurableSequence` types
 
@@ -262,14 +260,16 @@ Curable errors contain additional information about the disallowed sequence and 
 | `FENCED_TRAILING` | Contains a disallowed character at the end of a label | This character is disallowed at the end of a label |
 | `CONF_MIXED` | Contains visually confusing characters from multiple scripts ({script1}/{script2}) | This character from the {script1} script is disallowed because it is visually confusing with another character from the {script2} script |
 
-### List of all `NormalizableSequence` types
+### List of all `DisallowedSequence` types
 
-| `NormalizableSequenceType` | General info | Sequence info |
-| --------------------------------- | ------------ | ------------------------ |
-| `IGNORED`    | Contains a disallowed "ignored" character that has been removed | This character is ignored during normalization and has been automatically removed |
-| `MAPPED`     | Contains a disallowed character that has been replaced by a normalized sequence | This character is disallowed and has been automatically replaced by a normalized sequence |
-| `FE0F`       | Contains a disallowed variant of an emoji which has been replaced by an equivalent normalized emoji | This emoji has been automatically fixed to remove an invisible character |
-| `NFC`        | Contains a disallowed sequence that is not "NFC normalized" which has been replaced by an equivalent normalized sequence | This sequence has been automatically normalized into NFC canonical form |
+Disallowed name errors are not considered curable because it may be challenging to suggest a specific normalization suggestion that might resolve the problem.
+
+| `DisallowedSequenceType` | General info |
+| ------------------------- | ------------ |
+| `EMPTY_NAME`   | The name is empty |
+| `NSM_REPEATED` | Contains a repeated non-spacing mark |
+| `NSM_TOO_MANY` | Contains too many consecutive non-spacing marks |
+| `CONF_WHOLE` | Contains visually confusing characters from {script1} and {script2} scripts |
 
 ## Develop
 
