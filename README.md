@@ -47,6 +47,8 @@ The package is available on [pypi](https://pypi.org/project/ens-normalize/)
 pip install ens-normalize
 ```
 
+You can also try it in a [Google Colab Notebook](https://colab.research.google.com/drive/1BBDqwXCnoYq6ts3gPxDd_m5cFor-pEYf?usp=sharing).
+
 Normalize an ENS name:
 
 ```python
