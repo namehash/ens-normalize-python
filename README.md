@@ -49,10 +49,10 @@ Normalize an ENS name:
 from ens_normalize import ens_normalize
 # str -> str
 # raises DisallowedSequence for disallowed names
-# output ready for namehash
+# output is namehash ready
 ens_normalize('Nick.ETH')
 # 'nick.eth'
-# note: ens_normalize does not enforce the .eth TLD 3-character minimum
+# note: ens_normalize does not enforce any constraints that might be applied by a particular registrar. For example, the registrar for names that are a subname of '.eth' enforces a 3-character minimum and this constraint is not enforced by ens_normalize.
 ```
 
 Inspect issues with disallowed names:
@@ -271,7 +271,7 @@ Disallowed name errors are not considered curable because it may be challenging 
 | `NSM_TOO_MANY` | Contains too many consecutive non-spacing marks |
 | `CONF_WHOLE` | Contains visually confusing characters from {script1} and {script2} scripts |
 
-## Develop
+## Development
 
 ### Update this library to the latest ENS normalization specification *(optional)*
 
