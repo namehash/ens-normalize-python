@@ -5,7 +5,8 @@
 ![Coverage](https://raw.githubusercontent.com/namehash/ens-normalize-python/main/coverage_badge.svg)
 
 * Python implementation of the [ENS Name Normalization Standard](https://github.com/adraffy/ensip-norm/blob/main/draft.md).
-  Thanks to [Adraffy](https://github.com/adraffy) for his leadership in coordinating the definition of this standard with the ENS community.
+  *  Thanks to [Adraffy](https://github.com/adraffy) for his leadership in coordinating the definition of this standard with the ENS community.
+  *  This library is being maintained by the team at [Namehash](https://namehash.io).
 * Passes **100%** of the [official validation tests](https://github.com/adraffy/ens-normalize.js/tree/main/validate) (validated automatically with pytest on Linux, MacOS, and Windows, see below for details).
 * Passes an [additional suite of further tests](/tools/updater/update-ens.js#L54) for compatibility with the official [Javascript reference implementation](https://github.com/adraffy/ens-normalize.js) and code testing coverage.
 * Based on [JavaScript implementation version 1.9.0](https://github.com/adraffy/ens-normalize.js/tree/4873fbe6393e970e186ab57860cc59cbbb1fa162).
@@ -14,17 +15,18 @@
 
 **Foundations**
 * **sequence** - a Unicode string containing any number of characters.
-* **label** - a sequence of any length (including 0) that does not contain a `.` (full stop / period) character, e.g.  `abc` or `eth`.
-* **name** - a series of any number of labels (including 0) separated by `.` (full stop / period) characters, e.g. `abc.eth`.
+* **label separator** - a full stop character (also known as a period), e.g. `.` .
+* **label** - a sequence of any length (including 0) that does not contain a label separator, e.g.  `abc` or `eth`.
+* **name** - a series of any number of labels (including 0) separated by label separators, e.g. `abc.eth`.
 
 **Names**
-* **normalized name** - name that is in normalized form according to the ENS Normalization Standard. This means `name == ens_normalize(name)`. A normalized name always contains at least 1 label. All labels in a normalized name always contain a sequence of at least 1 character.
-* **normalizable name** - name that is normalized or that can be converted into a normalized name using `ens_normalize`.
-* **beautiful name** - name that is normalizable and is equal to itself when using `ens_beautify`. This means `name == ens_beautify(name)`. For all normalizable names `ens_normalize(ens_beautify(name)) == ens_normalize(name)`.
-* **disallowed name** - name that is not normalizable. This means `ens_normalize(name)` raises a `DisallowedSequence`.
-* **curable name** - name that is normalizable, or a name in the subset of disallowed names that can still be converted into a normalized name using `ens_cure`.
-* **empty name** - name that is the empty string. An empty name is disallowed and not curable.
-* **namehashable name** - name that is ready for for use with the ENS `namehash` function. Only normalized and empty names are namehashable.
+* **normalized name** - a name that is in normalized form according to the ENS Normalization Standard. This means `name == ens_normalize(name)`. A normalized name always contains at least 1 label. All labels in a normalized name always contain a sequence of at least 1 character.
+* **normalizable name** - a name that is normalized or that can be converted into a normalized name using `ens_normalize`.
+* **beautiful name** - a name that is normalizable and is equal to itself when using `ens_beautify`. This means `name == ens_beautify(name)`. For all normalizable names `ens_normalize(ens_beautify(name)) == ens_normalize(name)`.
+* **disallowed name** - a name that is not normalizable. This means `ens_normalize(name)` raises a `DisallowedSequence`.
+* **curable name** - a name that is normalizable, or a name in the subset of disallowed names that can still be converted into a normalized name using `ens_cure`.
+* **empty name** - a name that is the empty string. An empty name is disallowed and not curable.
+* **namehash ready name** - a name that is ready for for use with the ENS `namehash` function. Only normalized and empty names are namehash ready. Empty names represent the ENS namespace root for use with the ENS `namehash` function. Using the ENS `namehash` function on any name that is not namehash ready will return a node that is unreachable by ENS client applications that use a proper implementation of `ens_normalize`.
 
 **Sequences**
 * **unnormalized sequence** - a sequence from a name that is not in normalized form according to the ENS Normalization Standard.
@@ -32,16 +34,6 @@
 * **normalizable sequence** - an unnormalized sequence containing a normalization suggestion that is automatically applied using `ens_normalize` and `ens_cure`.
 * **curable sequence** - an unnormalized sequence containing a normalization suggestion that is automatically applied using `ens_cure`.
 * **disallowed sequence** - an unnormalized sequence without any normalization suggestion.
-
-**Exceptions**
-
-These Python classes are used by the library to communicate information about unnormalized sequences.
-
-| Exception class               |  `ens_normalize` handling  | `ens_cure` handling       | normalization<br>suggestion  | Inherits From         |
-|-------------------------------|----------------------------|---------------------------|------------------------------|-----------------------|
-| `NormalizableSequence`        |  ✅ automatically resolves | ✅ automatically resolves | ✅ included                  | `CurableSequence`     |
-| `CurableSequence`             |  ❌ throws error           | ✅ automatically resolves | ✅ included                  | `DisallowedSequence`  |
-| `DisallowedSequence`          |  ❌ throws error           | ❌ throws error           | ❌ none                      | `Exception`           |
 
 ## Usage
 
@@ -105,7 +97,11 @@ except DisallowedSequence as e:
         # Other disallowed sequences might be found even after applying this suggestion.
 ```
 
-You can attempt conversion of disallowed names into normalized names:
+You can attempt conversion of disallowed names into normalized names using `ens_cure`. This algorithm can “cure” many normalization errors that would fail `ens_normalize`. This can be useful in some situations. For example, if a user input fails `ens_normalize`, a user could be prompted with a more helpful error message such as: “Did you mean curedname.eth?”.
+
+Some names are not curable. For example, if it is challenging to provide a specific normalization suggestion that might be needed to replace a disallowed sequence.
+
+Note: This function is *NOT* a part of the ENS Normalization Standard.
 
 ```python
 from ens_normalize import ens_cure
@@ -114,7 +110,6 @@ from ens_normalize import ens_cure
 ens_cure('Ni‍ck?.ETH')
 # 'nick.eth'
 # ZWJ and '?' are removed, no error is raised
-# note: this function is not a part of the ENS Normalization Standard
 
 # note: might still raise DisallowedSequence for certain names, which cannot be cured, e.g.
 ens_cure('?')
@@ -228,7 +223,17 @@ ens_process("Nàme🧙‍♂️1⃣.eth",
 #   ])
 ```
 
-## List of all `DisallowedSequence` types
+## Exceptions
+
+These Python classes are used by the library to communicate information about unnormalized sequences.
+
+| Exception class               |  `ens_normalize` handling  | `ens_cure` handling       | normalization<br>suggestion  | Inherits From         |
+|-------------------------------|----------------------------|---------------------------|------------------------------|-----------------------|
+| `NormalizableSequence`        |  ✅ automatically resolves | ✅ automatically resolves | ✅ included                  | `CurableSequence`     |
+| `CurableSequence`             |  ❌ throws error           | ✅ automatically resolves | ✅ included                  | `DisallowedSequence`  |
+| `DisallowedSequence`          |  ❌ throws error           | ❌ throws error           | ❌ none                      | `Exception`           |
+
+### List of all `DisallowedSequence` types
 
 Disallowed name errors are not considered curable because it may be challenging to suggest a specific normalization suggestion that might resolve the problem.
 
@@ -239,7 +244,7 @@ Disallowed name errors are not considered curable because it may be challenging 
 | `NSM_TOO_MANY` | Contains too many consecutive non-spacing marks |
 | `CONF_WHOLE` | Contains visually confusing characters from {script1} and {script2} scripts |
 
-## List of all `CurableSequence` types
+### List of all `CurableSequence` types
 
 Curable errors contain additional information about the disallowed sequence and a normalization suggestion that might help to cure the name.
 
@@ -257,7 +262,7 @@ Curable errors contain additional information about the disallowed sequence and 
 | `FENCED_TRAILING` | Contains a disallowed character at the end of a label | This character is disallowed at the end of a label |
 | `CONF_MIXED` | Contains visually confusing characters from multiple scripts ({script1}/{script2}) | This character from the {script1} script is disallowed because it is visually confusing with another character from the {script2} script |
 
-## List of all normalization transformations
+### List of all `NormalizableSequence` types
 
 | `NormalizableSequenceType` | General info | Sequence info |
 | --------------------------------- | ------------ | ------------------------ |
