@@ -3,6 +3,7 @@
 ![Tests](https://github.com/namehash/ens-normalize-python/actions/workflows/python-app.yml/badge.svg?branch=main)
 ![PyPI](https://img.shields.io/pypi/v/ens-normalize)
 ![Coverage](https://raw.githubusercontent.com/namehash/ens-normalize-python/main/coverage_badge.svg)
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/namehash/ens-normalize-python/blob/master/examples/notebook.ipynb)
 
 * Python implementation of the [ENS Name Normalization Standard](https://github.com/adraffy/ensip-norm/blob/main/draft.md).
   *  Thanks to [Adraffy](https://github.com/adraffy) for his leadership in coordinating the definition of this standard with the ENS community.
@@ -47,7 +48,8 @@ The package is available on [pypi](https://pypi.org/project/ens-normalize/)
 pip install ens-normalize
 ```
 
-You can also try it in a [Google Colab Notebook](https://colab.research.google.com/drive/1BBDqwXCnoYq6ts3gPxDd_m5cFor-pEYf?usp=sharing).
+You can also try it in Google Colab:\
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/namehash/ens-normalize-python/blob/master/examples/notebook.ipynb)
 
 Normalize an ENS name:
 
