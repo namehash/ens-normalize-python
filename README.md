@@ -119,7 +119,7 @@ ens_cure('Ni‍ck?.ETH')
 
 # note: might still raise DisallowedSequence for certain names, which cannot be cured, e.g.
 ens_cure('?')
-# DisallowedSequence: The name is empty
+# DisallowedSequence: No valid characters in name
 ens_cure('0χх0.eth')
 # DisallowedSequence: Contains visually confusing characters from Cyrillic and Latin scripts
 ```
