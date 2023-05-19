@@ -120,10 +120,11 @@ ens_cure('Ni‍ck?.ETH')
 # note: might still raise DisallowedSequence for certain names, which cannot be cured, e.g.
 ens_cure('?')
 # DisallowedSequence: The name is empty
-# note: '?' is removed resulting in empty name
+# reason: '?' would have to be removed which would result in an empty name
 
 ens_cure('0χх0.eth')
 # DisallowedSequence: Contains visually confusing characters from Cyrillic and Latin scripts
+# reason: it is not clear which character should be removed ('χ' or 'х')
 ```
 
 Get a beautiful name that is optimized for display:
