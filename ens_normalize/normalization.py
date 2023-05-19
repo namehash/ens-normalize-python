@@ -60,7 +60,7 @@ class DisallowedSequenceType(DisallowedSequenceTypeBase):
 
     # GENERIC ----------------
 
-    EMPTY_NAME = "The name is empty"
+    EMPTY_NAME = "No valid characters in name"
 
     # NSM --------------------
 
