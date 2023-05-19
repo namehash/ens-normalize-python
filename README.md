@@ -277,7 +277,7 @@ Disallowed name errors are not considered curable because it may be challenging 
 
 | `DisallowedSequenceType` | General info |
 | ------------------------- | ------------ |
-| `EMPTY_NAME`   | The name is empty |
+| `EMPTY_NAME`   | No valid characters in name |
 | `NSM_REPEATED` | Contains a repeated non-spacing mark |
 | `NSM_TOO_MANY` | Contains too many consecutive non-spacing marks |
 | `CONF_WHOLE` | Contains visually confusing characters from {script1} and {script2} scripts |
