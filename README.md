@@ -66,9 +66,9 @@ ens_normalize('Nick.ETH')
 Inspect issues with disallowed names:
 
 ```python
-from ens_normalize import DisallowedSequence
-# added a hidden "zero width joiner" character
+from ens_normalize import DisallowedSequence, CurableSequence
 try:
+    # added a hidden "zero width joiner" character
     ens_normalize('Ni‍ck.ETH')
 # Catch the first disallowed sequence (the name we are attempting to normalize could have more than one).
 except DisallowedSequence as e:
