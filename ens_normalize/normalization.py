@@ -322,44 +322,18 @@ def filter_fe0f(text: str) -> str:
     return text.replace('\uFE0F', '')
 
 
-def add_all_fe0f(emojis: List[str]):
-    """
-    Find all emoji sequence prefixes that can be followed by FE0F.
-    Then, append FE0F to all prefixes that can but do not have it already.
-    This emulates adraffy's trie building algorithm, which does not add FE0F nodes,
-    but sets a "can be followed by FE0F" flag on the previous node.
-    """
-    cps_with_fe0f = set()
-    for cps in emojis:
-        for i in range(1, len(cps)):
-            if cps[i] == '\uFE0F':
-                # remember the entire prefix to simulate trie behavior
-                cps_with_fe0f.add(cps[:i])
-
-    emojis_out = []
-
-    for cps_in in emojis:
-        cps_out = ''
-        # for all prefixes
-        for i in range(len(cps_in)):
-            cps_out += cps_in[i]
-            # check if the prefix can be followed by FE0F
-            if cps_in[:i+1] in cps_with_fe0f and (i == len(cps_in) - 1 or cps_in[i + 1] != '\uFE0F'):
-                cps_out += '\uFE0F'
-        emojis_out.append(cps_out)
-
-    return emojis_out
-
-
 def create_emoji_regex_pattern(emojis: List[str]) -> str:
-    # add all optional fe0f so that we can match emojis with or without it
-    emojis = add_all_fe0f(emojis)
     fe0f = re.escape('\uFE0F')
     def make_emoji(emoji: str) -> str:
         # make FE0F optional
         return re.escape(emoji).replace(fe0f, f'{fe0f}?')
     # sort to match the longest first
-    return '|'.join(make_emoji(emoji) for emoji in sorted(emojis, key=len, reverse=True))
+    def order(emoji: str) -> int:
+        # emojis with FE0F need to be pushed back because the FE0F would trap the regex matching
+        # re.search(r'AF?|AB', '_AB_')
+        # >>> <re.Match object; span=(1, 2), match='A'>
+        return len(filter_fe0f(emoji))
+    return '|'.join(make_emoji(emoji) for emoji in sorted(emojis, key=order, reverse=True))
 
 
 def create_emoji_fe0f_lookup(emojis: List[str]) -> Dict[str, str]:

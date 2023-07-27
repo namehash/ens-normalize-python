@@ -13,7 +13,7 @@ INDEX_JS_PATH = os.path.join(
     '@adraffy',
     'ens-normalize',
     'dist',
-    'index.js',
+    'index.mjs',
 )
 
 
