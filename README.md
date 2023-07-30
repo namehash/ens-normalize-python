@@ -21,12 +21,12 @@
 * **name** - a series of any number of labels (including 0) separated by label separators, e.g. `abc.eth`.
 
 **Names**
-* **normalized name** - a name that is in normalized form according to the ENS Normalization Standard. This means `name == ens_normalize(name)`. A normalized name always contains at least 1 label. All labels in a normalized name always contain a sequence of at least 1 character.
+* **normalized name** - a name that is in normalized form according to the ENS Normalization Standard. This means `name == ens_normalize(name)`. A normalized name contains 0 or more labels. All labels in a normalized name always contain a sequence of at least 1 character. An empty string contains 0 labels and is a normalized name.
 * **normalizable name** - a name that is normalized or that can be converted into a normalized name using `ens_normalize`.
 * **beautiful name** - a name that is normalizable and is equal to itself when using `ens_beautify`. This means `name == ens_beautify(name)`. For all normalizable names `ens_normalize(ens_beautify(name)) == ens_normalize(name)`.
 * **disallowed name** - a name that is not normalizable. This means `ens_normalize(name)` raises a `DisallowedSequence`.
 * **curable name** - a name that is normalizable, or a name in the subset of disallowed names that can still be converted into a normalized name using `ens_cure`.
-* **empty name** - a name that is the empty string. An empty name is disallowed and not curable.
+* **empty name** - a name that is the empty string. An empty string is a name with 0 labels. It is a *normalized name*.
 * **namehash ready name** - a name that is ready for for use with the ENS `namehash` function. Only normalized and empty names are namehash ready. Empty names represent the ENS namespace root for use with the ENS `namehash` function. Using the ENS `namehash` function on any name that is not namehash ready will return a node that is unreachable by ENS client applications that use a proper implementation of `ens_normalize`.
 
 **Sequences**
@@ -119,11 +119,12 @@ ens_cure('Ni‍ck?.ETH')
 # 'nick.eth'
 # ZWJ and '?' are removed, no error is raised
 
-# note: might still raise DisallowedSequence for certain names, which cannot be cured, e.g.
+# note: might remove all characters from the input, which would result in an empty name
 ens_cure('?')
-# DisallowedSequence: No valid characters in name
-# reason: '?' would have to be removed which would result in an empty name
+# '' (empty string)
+# reason: '?' is disallowed and no replacement can be suggested
 
+# note: might still raise DisallowedSequence for certain names, which cannot be cured, e.g.
 ens_cure('0χх0.eth')
 # DisallowedSequence: Contains visually confusing characters from Cyrillic and Latin scripts
 # reason: it is not clear which character should be removed ('χ' or 'х')
@@ -275,12 +276,11 @@ Curable errors contain additional information about the disallowed sequence and 
 
 Disallowed name errors are not considered curable because it may be challenging to suggest a specific normalization suggestion that might resolve the problem.
 
-| `DisallowedSequenceType` | General info |
-| ------------------------- | ------------ |
-| `EMPTY_NAME`   | No valid characters in name |
-| `NSM_REPEATED` | Contains a repeated non-spacing mark |
-| `NSM_TOO_MANY` | Contains too many consecutive non-spacing marks |
-| `CONF_WHOLE` | Contains visually confusing characters from {script1} and {script2} scripts |
+| `DisallowedSequenceType` | General info | Explanation |
+| ------------------------- | ------------ | ------------------------ |
+| `NSM_REPEATED` | Contains a repeated non-spacing mark | Non-spacing marks can be encoded as one codepoint with the preceding character, which makes it difficult to suggest a normalization suggestion |
+| `NSM_TOO_MANY` | Contains too many consecutive non-spacing marks | Non-spacing marks can be encoded as one codepoint with the preceding character, which makes it difficult to suggest a normalization suggestion |
+| `CONF_WHOLE` | Contains visually confusing characters from {script1} and {script2} scripts | Both characters are equally likely to be the correct character to use and a normalization suggestion cannot be provided |
 
 ## Development
 
