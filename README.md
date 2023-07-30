@@ -125,9 +125,9 @@ ens_cure('?')
 # reason: '?' is disallowed and no replacement can be suggested
 
 # note: might still raise DisallowedSequence for certain names, which cannot be cured, e.g.
-ens_cure('0χх0.eth')
+ens_cure('0х0.eth')
 # DisallowedSequence: Contains visually confusing characters from Cyrillic and Latin scripts
-# reason: it is not clear which character should be removed ('χ' or 'х')
+# reason: it is not clear which character should be removed ('х' or '0'); 'х' is Cyrillic and '0' is Latin
 ```
 
 Get a beautiful name that is optimized for display:
@@ -278,6 +278,7 @@ Disallowed name errors are not considered curable because it may be challenging 
 
 | `DisallowedSequenceType` | General info | Explanation |
 | ------------------------- | ------------ | ------------------------ |
+| `EMPTY_NAME` | No valid characters in name | Input was non-empty but all characters were ignorable |
 | `NSM_REPEATED` | Contains a repeated non-spacing mark | Non-spacing marks can be encoded as one codepoint with the preceding character, which makes it difficult to suggest a normalization suggestion |
 | `NSM_TOO_MANY` | Contains too many consecutive non-spacing marks | Non-spacing marks can be encoded as one codepoint with the preceding character, which makes it difficult to suggest a normalization suggestion |
 | `CONF_WHOLE` | Contains visually confusing characters from {script1} and {script2} scripts | Both characters are equally likely to be the correct character to use and a normalization suggestion cannot be provided |

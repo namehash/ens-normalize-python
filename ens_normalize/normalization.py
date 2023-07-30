@@ -980,6 +980,11 @@ def ens_process(input: str,
         # will be set by post_check()
         label_is_greek = []
         error = post_check(emojis_as_fe0f, label_is_greek)
+        if len(input) == 0:
+            # special case for empty input
+            error = None
+        # elif error is EMPTY_NAME:
+        #     input was fully ignorable
         if isinstance(error, CurableSequence): # or NormalizableSequence because of inheritance
             offset_err_start(error, tokens)
 
