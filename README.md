@@ -21,7 +21,7 @@
 * **name** - a series of any number of labels (including 0) separated by label separators, e.g. `abc.eth`.
 
 **Names**
-* **normalized name** - a name that is in normalized form according to the ENS Normalization Standard. This means `name == ens_normalize(name)`. A normalized name contains 0 or more labels. All labels in a normalized name always contain a sequence of at least 1 character. An empty string contains 0 labels and is a normalized name.
+* **normalized name** - a name that is in normalized form according to the ENS Normalization Standard. This means `name == ens_normalize(name)`. A normalized name contains 0 or more labels. All labels in a normalized name always contain a sequence of at least 1 valid character. An empty string contains 0 labels and is a normalized name.
 * **normalizable name** - a name that is normalized or that can be converted into a normalized name using `ens_normalize`.
 * **beautiful name** - a name that is normalizable and is equal to itself when using `ens_beautify`. This means `name == ens_beautify(name)`. For all normalizable names `ens_normalize(ens_beautify(name)) == ens_normalize(name)`.
 * **disallowed name** - a name that is not normalizable. This means `ens_normalize(name)` raises a `DisallowedSequence`.
@@ -127,7 +127,9 @@ ens_cure('?')
 # note: might still raise DisallowedSequence for certain names, which cannot be cured, e.g.
 ens_cure('0х0.eth')
 # DisallowedSequence: Contains visually confusing characters from Cyrillic and Latin scripts
-# reason: it is not clear which character should be removed ('х' or '0'); 'х' is Cyrillic and '0' is Latin
+# reason: The "х" is actually a Cyrillic character that is visually confusing with the Latin "x".
+#         However, the "0"s are standard Latin digits and it is not clear which characters should be removed.
+#         They conflict with each other because it is not known if the user intended to use Cyrillic or Latin.
 ```
 
 Get a beautiful name that is optimized for display:
