@@ -58,10 +58,6 @@ class DisallowedSequenceType(DisallowedSequenceTypeBase):
     See README: Glossary -> Sequences.
     """
 
-    # GENERIC ----------------
-
-    EMPTY_NAME = "No valid characters in name"
-
     # NSM --------------------
 
     NSM_REPEATED = "Contains a repeated non-spacing mark"
@@ -523,9 +519,15 @@ def normalize_tokens(tokens: List[Token]) -> List[Token]:
     return collapse_valid_tokens(tokens)
 
 
-def post_check_empty(name: str) -> Optional[Union[DisallowedSequence, CurableSequence]]:
+def post_check_empty(name: str, input: str) -> Optional[CurableSequence]:
     if len(name) == 0:
-        return DisallowedSequence(DisallowedSequenceType.EMPTY_NAME)
+        # fully ignorable name
+        return CurableSequence(
+            CurableSequenceType.EMPTY_LABEL,
+            index=0,
+            sequence=input,
+            suggested='',
+        )
     if name[0] == '.':
         return CurableSequence(
             CurableSequenceType.EMPTY_LABEL,
@@ -760,9 +762,11 @@ def post_check_whole(group, cps: Iterable[int]) -> Optional[DisallowedSequence]:
                 )
 
 
-def post_check(name: str, label_is_greek: List[bool]) -> Optional[Union[DisallowedSequence, CurableSequence]]:
+def post_check(name: str, label_is_greek: List[bool], input: str) -> Optional[Union[DisallowedSequence, CurableSequence]]:
     # name has emojis replaced with a single FE0F
-    e = post_check_empty(name)
+    if len(input) == 0:
+        return None
+    e = post_check_empty(name, input)
     if e is not None:
         return e
     label_offset = 0
@@ -979,12 +983,7 @@ def ens_process(input: str,
         # true for each label that is greek
         # will be set by post_check()
         label_is_greek = []
-        error = post_check(emojis_as_fe0f, label_is_greek)
-        if len(input) == 0:
-            # special case for empty input
-            error = None
-        # elif error is EMPTY_NAME:
-        #     input was fully ignorable
+        error = post_check(emojis_as_fe0f, label_is_greek, input)
         if isinstance(error, CurableSequence): # or NormalizableSequence because of inheritance
             offset_err_start(error, tokens)
 

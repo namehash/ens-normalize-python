@@ -408,3 +408,11 @@ def test_empty_name():
     assert ens_beautify('') == ''
     assert ens_tokenize('') == []
     assert ens_cure('') == ''
+
+
+def test_ignorable_name():
+    assert ens_process('').error is None
+    e = ens_process('\ufe0f\ufe0f').error
+    assert e.type == CurableSequenceType.EMPTY_LABEL
+    assert e.index == 0
+    assert e.sequence == '\ufe0f\ufe0f'

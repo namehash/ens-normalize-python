@@ -27,7 +27,7 @@
 * **disallowed name** - a name that is not normalizable. This means `ens_normalize(name)` raises a `DisallowedSequence`.
 * **curable name** - a name that is normalizable, or a name in the subset of disallowed names that can still be converted into a normalized name using `ens_cure`.
 * **empty name** - a name that is the empty string. An empty string is a name with 0 labels. It is a *normalized name*.
-* **namehash ready name** - a name that is ready for for use with the ENS `namehash` function. Only normalized and empty names are namehash ready. Empty names represent the ENS namespace root for use with the ENS `namehash` function. Using the ENS `namehash` function on any name that is not namehash ready will return a node that is unreachable by ENS client applications that use a proper implementation of `ens_normalize`.
+* **namehash ready name** - a name that is ready for for use with the ENS `namehash` function. Only normalized names are namehash ready. Empty names represent the ENS namespace root for use with the ENS `namehash` function. Using the ENS `namehash` function on any name that is not namehash ready will return a node that is unreachable by ENS client applications that use a proper implementation of `ens_normalize`.
 
 **Sequences**
 * **unnormalized sequence** - a sequence from a name that is not in normalized form according to the ENS Normalization Standard.
@@ -278,7 +278,6 @@ Disallowed name errors are not considered curable because it may be challenging 
 
 | `DisallowedSequenceType` | General info | Explanation |
 | ------------------------- | ------------ | ------------------------ |
-| `EMPTY_NAME` | No valid characters in name | Input was non-empty but all characters were ignorable |
 | `NSM_REPEATED` | Contains a repeated non-spacing mark | Non-spacing marks can be encoded as one codepoint with the preceding character, which makes it difficult to suggest a normalization suggestion |
 | `NSM_TOO_MANY` | Contains too many consecutive non-spacing marks | Non-spacing marks can be encoded as one codepoint with the preceding character, which makes it difficult to suggest a normalization suggestion |
 | `CONF_WHOLE` | Contains visually confusing characters from {script1} and {script2} scripts | Both characters are equally likely to be the correct character to use and a normalization suggestion cannot be provided |
