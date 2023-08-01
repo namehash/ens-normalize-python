@@ -111,8 +111,9 @@ def test_ens_tokenize_full():
     # --
     ('aa--a', CurableSequenceType.HYPHEN, 2, '--', ''),
     # empty
-    ("", DisallowedSequenceType.EMPTY_NAME, None, None, None),
     ("a..b", CurableSequenceType.EMPTY_LABEL, 1, '..', '.'),
+    (".ab", CurableSequenceType.EMPTY_LABEL, 0, '.', ''),
+    ("ab.", CurableSequenceType.EMPTY_LABEL, 2, '.', ''),
 
     # combining mark at the beginning
     ('\u0327a', CurableSequenceType.CM_START, 0, '\u0327', ''),
@@ -297,7 +298,7 @@ def test_ens_is_normalized():
     assert is_ens_normalized('a')
     assert not is_ens_normalized('a_b')
     assert not is_ens_normalized('Abc')
-    assert not is_ens_normalized('')
+    assert is_ens_normalized('')
 
 
 def test_normalization_error_object():
@@ -315,18 +316,18 @@ def test_normalization_error_object():
         assert str(e) == e.general_info
         assert repr(e) == 'CurableSequence(code="UNDERSCORE", index=1, sequence="_", suggested="")'
     try:
-        ens_normalize('')
+        ens_normalize('0х0')
     except DisallowedSequence as e:
-        assert e.type == DisallowedSequenceType.EMPTY_NAME
-        assert e.code == DisallowedSequenceType.EMPTY_NAME.code
-        assert e.general_info == DisallowedSequenceType.EMPTY_NAME.general_info
+        assert e.type == DisallowedSequenceType.CONF_WHOLE
+        assert e.code == DisallowedSequenceType.CONF_WHOLE.code
+        assert e.general_info == DisallowedSequenceType.CONF_WHOLE.general_info.format(script1='Cyrillic', script2='Latin')
         assert str(e) == e.general_info
-        assert repr(e) == 'DisallowedSequence(code="EMPTY_NAME")'
+        assert repr(e) == 'DisallowedSequence(code="CONF_WHOLE")'
 
 
 def test_error_is_exception():
     with pytest.raises(Exception):
-        ens_normalize('')
+        ens_normalize('0х0')
 
 
 def test_str_repr():
@@ -344,9 +345,7 @@ def test_ens_cure():
     with pytest.raises(DisallowedSequence) as e:
         ens_cure('0x.0χ.0х')
     assert e.value.type == DisallowedSequenceType.CONF_WHOLE
-    with pytest.raises(DisallowedSequence) as e:
-        ens_cure('?')
-    assert e.value.type == DisallowedSequenceType.EMPTY_NAME
+    assert ens_cure('?') == ''
     assert ens_cure('abc.?') == 'abc'
     assert ens_cure('abc.?.xyz') == 'abc.xyz'
     assert ens_cure('?.xyz') == 'xyz'
@@ -358,6 +357,9 @@ def test_ens_process_cure():
     assert ret.cured == 'a.b'
     assert [e.code for e in ret.cures] == ['EMPTY_LABEL', 'UNDERSCORE']
     ret = ens_process('', do_cure=True)
+    assert ret.cured == ''
+    assert ret.cures == []
+    ret = ens_process('0х0', do_cure=True)
     assert ret.cured is None
     assert ret.cures is None
 
@@ -399,3 +401,18 @@ def test_data_creation():
     with open(ens_normalize_module.normalization.SPEC_PICKLE_PATH, 'rb') as f:
         buf2 = f.read()
     assert buf1 == buf2
+
+
+def test_empty_name():
+    assert ens_normalize('') == ''
+    assert ens_beautify('') == ''
+    assert ens_tokenize('') == []
+    assert ens_cure('') == ''
+
+
+def test_ignorable_name():
+    assert ens_process('').error is None
+    e = ens_process('\ufe0f\ufe0f').error
+    assert e.type == CurableSequenceType.EMPTY_LABEL
+    assert e.index == 0
+    assert e.sequence == '\ufe0f\ufe0f'

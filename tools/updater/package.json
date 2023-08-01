@@ -4,6 +4,6 @@
     "start": "python update_ens.py"
   },
   "dependencies": {
-    "@adraffy/ens-normalize": "github:adraffy/ens-normalize.js#4873fbe6393e970e186ab57860cc59cbbb1fa162"
+    "@adraffy/ens-normalize": "github:adraffy/ens-normalize.js#0383b198462f594ae639ad7d46dcfbaff9b276fe"
   }
 }
