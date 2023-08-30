@@ -63,6 +63,15 @@ ens_normalize('Nick.ETH')
 # note: ens_normalize does not enforce any constraints that might be applied by a particular registrar. For example, the registrar for names that are a subname of '.eth' enforces a 3-character minimum and this constraint is not enforced by ens_normalize.
 ```
 
+Check if a name is *normalizable* (see Glossary):
+
+```python
+from ens_normalize import is_ens_normalizable
+# str -> bool
+is_ens_normalizable('Nick.ETH')
+# True
+```
+
 Inspect issues with disallowed names:
 
 ```python

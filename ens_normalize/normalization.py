@@ -1159,3 +1159,11 @@ def is_ens_normalized(name: str) -> bool:
     (i.e. `ens_normalize(name) == name`).
     """
     return ens_process(name, do_normalize=True).normalized == name
+
+
+def is_ens_normalizable(name: str) -> bool:
+    """
+    Checks if the input string is ENS normalizable
+    (i.e. `ens_normalize(name)` will not raise `DisallowedSequence`).
+    """
+    return ens_process(name).error is None

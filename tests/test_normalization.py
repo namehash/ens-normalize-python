@@ -9,6 +9,7 @@ from ens_normalize import (
     ens_tokenize,
     ens_normalizations,
     is_ens_normalized,
+    is_ens_normalizable,
     DisallowedSequence,
     DisallowedSequenceType,
     CurableSequence,
@@ -416,3 +417,9 @@ def test_ignorable_name():
     assert e.type == CurableSequenceType.EMPTY_LABEL
     assert e.index == 0
     assert e.sequence == '\ufe0f\ufe0f'
+
+
+def test_is_normalizable():
+    assert is_ens_normalizable('nick.eth')
+    assert not is_ens_normalizable('ni_ck.eth')
+    assert is_ens_normalizable('')

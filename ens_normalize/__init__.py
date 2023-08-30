@@ -6,6 +6,7 @@ from .normalization import (
     ens_tokenize,
     ens_normalizations,
     is_ens_normalized,
+    is_ens_normalizable,
     DisallowedSequence,
     DisallowedSequenceType,
     CurableSequence,
