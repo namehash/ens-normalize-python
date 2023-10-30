@@ -1158,6 +1158,9 @@ def is_ens_normalized(name: str) -> bool:
     Checks if the input string is already ENS normalized
     (i.e. `ens_normalize(name) == name`).
     """
+    if len(name) == 1 and ord(name) in NORMALIZATION.valid:
+        # single codepoint optimization
+        return True
     return ens_process(name, do_normalize=True).normalized == name
 
 
