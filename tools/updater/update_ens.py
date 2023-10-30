@@ -30,7 +30,7 @@ def add_whole_map_export():
     with open(INDEX_JS_PATH, encoding='utf-8') as f:
         content = f.read()
 
-    content += '\n\n// added by update_ens.py\nexport {WHOLE_MAP}\n'
+    content += '\n\n// added by update_ens.py\ninit();\nexport {WHOLE_MAP};\n'
 
     with open(INDEX_JS_PATH, 'w', encoding='utf-8') as f:
         f.write(content)
