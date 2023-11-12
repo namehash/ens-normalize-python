@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ens-normalize"
-version = "3.0.5"
+version = "3.0.6"
 description = "Ethereum Name Service (ENS) Name Normalizer"
 license = "MIT"
 authors = ["Jakub Karbowski <jakub@namehash.io>"]
@@ -12,7 +12,7 @@ packages = [{include = "ens_normalize"}]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-pyunormalize = "^15.0.0"
+pyunormalize = "^15.1.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.1"
