@@ -51,6 +51,8 @@ pip install ens-normalize
 You can also try it in Google Colab\
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/namehash/ens-normalize-python/blob/main/examples/notebook.ipynb)
 
+### ens_normalize
+
 Normalize an ENS name:
 
 ```python
@@ -113,6 +115,7 @@ except DisallowedSequence as e:
         # Fields index, sequence_info, sequence, and suggested are available only for curable errors.
         # Other disallowed sequences might be found even after applying this suggestion.
 ```
+### ens_cure
 
 You can attempt conversion of disallowed names into normalized names using `ens_cure`. This algorithm can “cure” many normalization errors that would fail `ens_normalize`. This can be useful in some situations. For example, if a user input fails `ens_normalize`, a user could be prompted with a more helpful error message such as: “Did you mean curedname.eth?”.
 
@@ -141,6 +144,8 @@ ens_cure('0х0.eth')
 #         They conflict with each other because it is not known if the user intended to use Cyrillic or Latin.
 ```
 
+### ens_beautify
+
 Get a beautiful name that is optimized for display:
 
 ```python
@@ -154,6 +159,8 @@ ens_beautify('1⃣2⃣.eth')
 # ens_normalize(ens_beautify(x)) == ens_normalize(x)
 # note: in addition to beautifying emojis with fully-qualified emoji, ens_beautify converts the character 'ξ' (Greek lowercase 'Xi') to 'Ξ' (Greek uppercase 'Xi', a.k.a. the Ethereum symbol) in labels that contain no other Greek characters
 ```
+
+### ens_tokenize
 
 Generate detailed name analysis:
 
@@ -174,6 +181,8 @@ ens_tokenize('Nàme‍🧙‍♂.eth')
 #  TokenValid(cps=[101, 116, 104], type='valid')]
 ```
 
+### ens_normalizations
+
 For a normalizable name, you can find out how the input is transformed during normalization:
 
 ```python
@@ -191,6 +200,8 @@ ens_normalizations('Nàme🧙‍♂️.eth')
 # [NormalizableSequence(code="MAPPED", index=0, sequence="N", suggested="n"),
 #  NormalizableSequence(code="FE0F", index=4, sequence="🧙‍♂️", suggested="🧙‍♂")]
 ```
+
+### Example Workflow
 
 An example normalization workflow:
 
