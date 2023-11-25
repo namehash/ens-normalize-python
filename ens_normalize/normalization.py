@@ -1,3 +1,4 @@
+import itertools
 from typing import Callable, Dict, List, NamedTuple, Set, Optional, Tuple, Union, Iterable
 from enum import Enum
 import re
@@ -403,6 +404,21 @@ def group_names_to_ids(groups, whole_map):
                     assert id is not None
                     v['M'][k][i] = id
 
+def generate_all_emoji_variants(input):
+    splits = input.split('\uFE0F')
+    fe0f_at_end = splits[-1] == ''
+    if fe0f_at_end:
+        splits = splits[:-1]
+    res = []
+    for i, emoji in enumerate(splits):
+        if i == len(splits) - 1 and not fe0f_at_end:
+            res.append([emoji])
+        else:
+            res.append([emoji, emoji + '\uFE0F'])
+
+    # print(res)
+    for x in itertools.product(*res):
+        yield ''.join(x)
 
 class NormalizationData:
     def __init__(self, spec_json_path: str):
@@ -428,13 +444,25 @@ class NormalizationData:
         self.emoji_fe0f_lookup = create_emoji_fe0f_lookup([''.join(chr(cp) for cp in cps) for cps in self.emoji])
         self.emoji_regex = re.compile(create_emoji_regex_pattern([''.join(chr(cp) for cp in cps) for cps in self.emoji]))
 
+        
 
 def load_normalization_data_pickle(spec_pickle_path: str) -> NormalizationData:
     """
     Loads `NormalizationData` from a pickle file.
     """
     with open(spec_pickle_path, 'rb') as f:
-        return pickle.load(f)
+        nd = pickle.load(f)
+
+    import ahocorasick
+    nd.automaton = ahocorasick.Automaton()
+    print('emoji', len(nd.emoji))
+    for emoji in [''.join(chr(cp) for cp in cps) for cps in nd.emoji]:
+        print(emoji)
+        for variant in generate_all_emoji_variants(emoji):
+            nd.automaton.add_word(variant, variant)
+            
+    nd.automaton.make_automaton()
+    return nd
 
 
 NORMALIZATION = load_normalization_data_pickle(SPEC_PICKLE_PATH)
@@ -906,15 +934,25 @@ def ens_process(input: str,
 
     input_cur = 0
     emoji_iter = NORMALIZATION.emoji_regex.finditer(input)
-    next_emoji_match = next(emoji_iter, None)
+    print('omg')
+    emoji_iter =  NORMALIZATION.automaton.iter_long(input)
 
+    next_emoji_match = next(emoji_iter, None)
+    # for end_index, value in
+    #     start_index = end_index - len(value) + 1
     while input_cur < len(input):
         # if next emoji is at the current position
-        if next_emoji_match is not None and next_emoji_match.start() == input_cur:
+        
+        # if next_emoji_match is not None and next_emoji_match.start() == input_cur:
+        if next_emoji_match is not None and next_emoji_match[0] -len(next_emoji_match[1])+1 == input_cur:
+            # print(next_emoji_match)
+            print(next_emoji_match, len(next_emoji_match[1]))
             # extract emoji
-            emoji = next_emoji_match.group()
+            emoji = next_emoji_match[1]
+            # emoji = next_emoji_match.group()
             # advance cursor
-            input_cur = next_emoji_match.end()
+            input_cur = next_emoji_match[0]+1
+            # input_cur = next_emoji_match.end()
             # prepare next emoji
             next_emoji_match = next(emoji_iter, None)
 
