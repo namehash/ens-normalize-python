@@ -875,6 +875,9 @@ def tokens2beautified(tokens: List[Token], label_is_greek: List[bool]) -> str:
     return ''.join(s)
 
 
+SIMPLE_NAME_REGEX = re.compile(r'^[a-z0-9]+$')
+
+
 def ens_process(input: str,
                 do_normalize: bool = False,
                 do_beautify: bool = False,
@@ -901,6 +904,24 @@ def ens_process(input: str,
     - `error`: `DisallowedSequence` or `CurableSequence` or `None` if input is valid
     - `normalizations`: list of `NormalizableSequence` objects or `None` if `do_normalizations` is `False`
     """
+    if SIMPLE_NAME_REGEX.match(input) is not None:
+        tokens = []
+        for c in input:
+            cp = ord(c)
+            tokens.append(TokenValid(
+                cps=[cp],
+            ))
+
+        return ENSProcessResult(
+            normalized=input,
+            beautified=input,
+            tokens=tokens,
+            cured=None,
+            cures=None,
+            error=None,
+            normalizations=[],
+        )
+    
     tokens: List[Token] = []
     error = None
 
