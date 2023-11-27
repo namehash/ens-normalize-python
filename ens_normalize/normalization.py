@@ -905,16 +905,14 @@ def ens_process(input: str,
     - `normalizations`: list of `NormalizableSequence` objects or `None` if `do_normalizations` is `False`
     """
     if SIMPLE_NAME_REGEX.match(input) is not None:
-        tokens = [TokenValid(cps=[ord(c) for c in input])]
-
         return ENSProcessResult(
-            normalized=input,
-            beautified=input,
-            tokens=tokens,
-            cured=None,
-            cures=None,
+            normalized=input if do_normalize else None,
+            beautified=input if do_beautify else None,
+            tokens=[TokenValid(cps=[ord(c) for c in input])] if do_tokenize else None,
+            cured=input if do_cure else None,
+            cures=[] if do_cure else None,
             error=None,
-            normalizations=[],
+            normalizations=[] if do_normalizations else None,
         )
     
     tokens: List[Token] = []

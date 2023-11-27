@@ -423,3 +423,104 @@ def test_is_normalizable():
     assert is_ens_normalizable('nick.eth')
     assert not is_ens_normalizable('ni_ck.eth')
     assert is_ens_normalizable('')
+
+
+def test_simple_name_optimization():
+    r = ens_process(
+        'abc123',
+        do_normalize=False,
+        do_beautify=False,
+        do_tokenize=False,
+        do_normalizations=False,
+        do_cure=False,
+    )
+    assert r.normalized is None
+    assert r.beautified is None
+    assert r.tokens is None
+    assert r.cured is None
+    assert r.cures is None
+    assert r.error is None
+    assert r.normalizations is None
+
+    r = ens_process(
+        'abc123',
+        do_normalize=True,
+        do_beautify=False,
+        do_tokenize=False,
+        do_normalizations=False,
+        do_cure=False,
+    )
+    assert r.normalized == 'abc123'
+    assert r.beautified is None
+    assert r.tokens is None
+    assert r.cured is None
+    assert r.cures is None
+    assert r.error is None
+    assert r.normalizations is None
+
+    r = ens_process(
+        'abc123',
+        do_normalize=False,
+        do_beautify=True,
+        do_tokenize=False,
+        do_normalizations=False,
+        do_cure=False,
+    )
+    assert r.normalized is None
+    assert r.beautified == 'abc123'
+    assert r.tokens is None
+    assert r.cured is None
+    assert r.cures is None
+    assert r.error is None
+    assert r.normalizations is None
+
+    r = ens_process(
+        'abc123',
+        do_normalize=False,
+        do_beautify=False,
+        do_tokenize=True,
+        do_normalizations=False,
+        do_cure=False,
+    )
+    assert r.normalized is None
+    assert r.beautified is None
+    assert r.tokens is not None
+    assert r.cured is None
+    assert r.cures is None
+    assert r.error is None
+    assert r.normalizations is None
+
+    r = ens_process(
+        'abc123',
+        do_normalize=False,
+        do_beautify=False,
+        do_tokenize=False,
+        do_normalizations=True,
+        do_cure=False,
+    )
+
+    assert r.normalized is None
+    assert r.beautified is None
+    assert r.tokens is None
+    assert r.cured is None
+    assert r.cures is None
+    assert r.error is None
+    assert r.normalizations is not None
+    assert len(r.normalizations) == 0
+
+    r = ens_process(
+        'abc123',
+        do_normalize=False,
+        do_beautify=False,
+        do_tokenize=False,
+        do_normalizations=False,
+        do_cure=True,
+    )
+    assert r.normalized is None
+    assert r.beautified is None
+    assert r.tokens is None
+    assert r.cured == 'abc123'
+    assert r.cures is not None
+    assert len(r.cures) == 0
+    assert r.error is None
+    assert r.normalizations is None
