@@ -427,7 +427,7 @@ def test_is_normalizable():
 
 def test_simple_name_optimization():
     r = ens_process(
-        'abc123',
+        'abc123.eth',
         do_normalize=False,
         do_beautify=False,
         do_tokenize=False,
@@ -443,14 +443,14 @@ def test_simple_name_optimization():
     assert r.normalizations is None
 
     r = ens_process(
-        'abc123',
+        'abc123.eth',
         do_normalize=True,
         do_beautify=False,
         do_tokenize=False,
         do_normalizations=False,
         do_cure=False,
     )
-    assert r.normalized == 'abc123'
+    assert r.normalized == 'abc123.eth'
     assert r.beautified is None
     assert r.tokens is None
     assert r.cured is None
@@ -459,7 +459,7 @@ def test_simple_name_optimization():
     assert r.normalizations is None
 
     r = ens_process(
-        'abc123',
+        'abc123.eth',
         do_normalize=False,
         do_beautify=True,
         do_tokenize=False,
@@ -467,7 +467,7 @@ def test_simple_name_optimization():
         do_cure=False,
     )
     assert r.normalized is None
-    assert r.beautified == 'abc123'
+    assert r.beautified == 'abc123.eth'
     assert r.tokens is None
     assert r.cured is None
     assert r.cures is None
@@ -475,7 +475,7 @@ def test_simple_name_optimization():
     assert r.normalizations is None
 
     r = ens_process(
-        'abc123',
+        'abc123.eth',
         do_normalize=False,
         do_beautify=False,
         do_tokenize=True,
@@ -491,7 +491,7 @@ def test_simple_name_optimization():
     assert r.normalizations is None
 
     r = ens_process(
-        'abc123',
+        'abc123.eth',
         do_normalize=False,
         do_beautify=False,
         do_tokenize=False,
@@ -509,7 +509,7 @@ def test_simple_name_optimization():
     assert len(r.normalizations) == 0
 
     r = ens_process(
-        'abc123',
+        'abc123.eth',
         do_normalize=False,
         do_beautify=False,
         do_tokenize=False,
@@ -519,7 +519,7 @@ def test_simple_name_optimization():
     assert r.normalized is None
     assert r.beautified is None
     assert r.tokens is None
-    assert r.cured == 'abc123'
+    assert r.cured == 'abc123.eth'
     assert r.cures is not None
     assert len(r.cures) == 0
     assert r.error is None
