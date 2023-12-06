@@ -22,8 +22,21 @@ ruff = "^0.1.6"
 pre-commit = "^3.5.0"
 coverage-badge = "^1.1.0"
 
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
+
+[tool.ruff.lint.flake8-quotes]
+docstring-quotes = "double"
+inline-quotes = "single"
+multiline-quotes = "double"
+
+[tool.ruff.format]
+# Prefer single quotes over double quotes.
+quote-style = "single"
 
 [build-system]
 requires = ["poetry-core"]
