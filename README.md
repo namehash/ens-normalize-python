@@ -1,6 +1,6 @@
 # ENS Normalize Python
 
-![Tests](https://github.com/namehash/ens-normalize-python/actions/workflows/python-app.yml/badge.svg?branch=main)
+![Tests](https://github.com/namehash/ens-normalize-python/actions/workflows/test.yml/badge.svg?branch=main)
 ![PyPI](https://img.shields.io/pypi/v/ens-normalize)
 ![Coverage](https://raw.githubusercontent.com/namehash/ens-normalize-python/main/coverage_badge.svg)
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/namehash/ens-normalize-python/blob/main/examples/notebook.ipynb)
