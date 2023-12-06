@@ -197,7 +197,14 @@ class CurableSequence(DisallowedSequence):
     See README: Glossary -> Sequences.
     """
 
-    def __init__(self, type: CurableSequenceType, index: int, sequence: str, suggested: str, meta: Dict[str, str] = {}):
+    def __init__(
+        self,
+        type: CurableSequenceType,
+        index: int,
+        sequence: str,
+        suggested: str,
+        meta: Dict[str, str] = {},
+    ):
         super().__init__(type, meta)
         self.type = type
         self.index = index
@@ -226,7 +233,12 @@ class NormalizableSequence(CurableSequence):
     """
 
     def __init__(
-        self, type: NormalizableSequenceType, index: int, sequence: str, suggested: str, meta: Dict[str, str] = {}
+        self,
+        type: NormalizableSequenceType,
+        index: int,
+        sequence: str,
+        suggested: str,
+        meta: Dict[str, str] = {},
     ):
         super().__init__(type, index, sequence, suggested, meta)
         self.type = type
