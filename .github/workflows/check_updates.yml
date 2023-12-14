@@ -1,0 +1,35 @@
+name: Check ens-normalize.js updates
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+
+jobs:
+  test:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install poetry
+      run: pipx install poetry
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
+        cache: "poetry"
+
+    - name: Install dependencies
+      run: poetry install
+
+    - name: Update
+      run: |
+        cd tools/updater
+        npm start
+        
+    - name: Check changes
+      run: |
+        git status
+        git diff --exit-code --name-only

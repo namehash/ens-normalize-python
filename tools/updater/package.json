@@ -1,7 +1,7 @@
 {
   "type": "module",
   "scripts": {
-    "start": "python update_ens.py"
+    "start": "poetry run python update_ens.py"
   },
   "dependencies": {
     "@adraffy/ens-normalize": "github:adraffy/ens-normalize.js#52ce1a2fb22b86416f23a481c956bc74368c35a7"
