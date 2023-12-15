@@ -27,6 +27,7 @@ jobs:
     - name: Update
       run: |
         cd tools/updater
+        sed -r 's/github:adraffy\/ens-normalize\.js#[0-9a-f]+/github:adraffy\/ens-normalize.js/' package.json  -i
         npm start
         
     - name: Check changes
