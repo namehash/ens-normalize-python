@@ -5,7 +5,7 @@ on:
     - cron: '33 0 * * *'
 
 jobs:
-  test:
+  check_updates:
 
     runs-on: ubuntu-latest
 
@@ -33,4 +33,4 @@ jobs:
     - name: Check changes
       run: |
         git status
-        git diff --exit-code --name-only
+        git diff --exit-code --name-only -- . ':!tools/updater/package-lock.json' ':!tools/updater/package.json'
