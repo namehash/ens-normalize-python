@@ -349,3 +349,9 @@ Installs dependencies, runs validation tests and builds the wheel.
     ```bash
     poetry build
     ```
+
+## License
+
+Licensed under the MIT License, Copyright © 2023-present [NameHash Labs](https://namehashlabs.org).
+
+See [LICENSE](./LICENSE) for more information.
