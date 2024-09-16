@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ens-normalize"
-version = "3.0.7"
+version = "3.0.8"
 description = "Ethereum Name Service (ENS) Name Normalizer"
 license = "MIT"
 authors = ["Jakub Karbowski <jakub@namehash.io>"]
