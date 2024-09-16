@@ -340,11 +340,11 @@ def filter_fe0f(text: str) -> str:
     """
     Remove all FE0F from text.
     """
-    return text.replace('\uFE0F', '')
+    return text.replace('\ufe0f', '')
 
 
 def create_emoji_regex_pattern(emojis: List[str]) -> str:
-    fe0f = re.escape('\uFE0F')
+    fe0f = re.escape('\ufe0f')
 
     def make_emoji(emoji: str) -> str:
         # make FE0F optional
@@ -1051,7 +1051,7 @@ def ens_process(
 
     if error is None:
         # run post checks
-        emojis_as_fe0f = ''.join(tokens2str(tokens, lambda _: '\uFE0F'))
+        emojis_as_fe0f = ''.join(tokens2str(tokens, lambda _: '\ufe0f'))
         # true for each label that is greek
         # will be set by post_check()
         label_is_greek = []
