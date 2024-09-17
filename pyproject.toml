@@ -12,7 +12,7 @@ packages = [{include = "ens_normalize"}]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-pyunormalize = "^15.1.0"
+pyunormalize = "^16.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.1"
