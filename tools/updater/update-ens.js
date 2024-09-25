@@ -44,11 +44,11 @@ async function download_files() {
     console.log("Downloading spec...");
     const spec = await (await fetch(SPEC_URL)).json();
     spec["whole_map"] = parse_whole_map(WHOLE_MAP)
-    await writeFile(SPEC_PATH, JSON.stringify(spec));
+    await writeFile(SPEC_PATH, JSON.stringify(spec, null, 2));
 
     console.log("Downloading tests...");
     const tests = await (await fetch(TESTS_URL)).json();
-    await writeFile(TESTS_PATH, JSON.stringify(tests));
+    await writeFile(TESTS_PATH, JSON.stringify(tests, null, 2));
 }
 
 async function generate_tests() {
@@ -77,7 +77,7 @@ async function generate_tests() {
             });
         }
     }
-    await writeFile(TESTS_PATH, JSON.stringify(new_tests));
+    await writeFile(TESTS_PATH, JSON.stringify(new_tests, null, 2));
 }
 
 await download_files();
