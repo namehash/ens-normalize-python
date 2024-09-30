@@ -4,6 +4,6 @@
     "start": "poetry run python update_ens.py"
   },
   "dependencies": {
-    "@adraffy/ens-normalize": "github:adraffy/ens-normalize.js#52ce1a2fb22b86416f23a481c956bc74368c35a7"
+    "@adraffy/ens-normalize": "github:adraffy/ens-normalize.js#21de1f60e93d6b5cd99e8f3402a2dd56a2b6883d"
   }
 }

@@ -376,6 +376,9 @@ def test_error_meta():
     e = ens_process('0x.0χ.0х').error
     assert e.general_info == 'Contains visually confusing characters from Cyrillic and Latin scripts'
 
+
+@pytest.mark.skip(reason='there are no such characters anymore')
+def test_error_meta_other_scripts():
     # unknown script for character
     c = chr(771)
     e: CurableSequence = ens_process(f'bitcoin.bitcin.bi̇tcin.bitсin{c}').error
