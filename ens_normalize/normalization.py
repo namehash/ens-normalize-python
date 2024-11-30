@@ -1060,7 +1060,7 @@ def ens_process(
         label_is_greek = []
         error = post_check(emojis_as_fe0f, label_is_greek, input)
         if isinstance(error, CurableSequence):  # or NormalizableSequence because of inheritance
-            offset_err_start(error, tokens)
+            offset_err_start(error, tokens, input)
 
     # else:
     # only the result of post_check() is not input aligned
@@ -1095,7 +1095,20 @@ def ens_process(
     )
 
 
-def offset_err_start(err: Optional[CurableSequence], tokens: List[Token]):
+def restore_ignored_in_sequence(seq: str, input: str) -> str:
+    seq_out = []
+    input_i = 0
+    for c in seq:
+        # TODO: needs to handle mapped characters
+        while input[input_i] != c:
+            seq_out.append(input[input_i])
+            input_i += 1
+        seq_out.append(c)
+        input_i += 1
+    return ''.join(seq_out)
+
+
+def offset_err_start(err: Optional[CurableSequence], tokens: List[Token], input: str):
     """
     Output of post_check() is not input aligned.
     This function offsets the error index (in-place) to match the input characters.
@@ -1134,6 +1147,7 @@ def offset_err_start(err: Optional[CurableSequence], tokens: List[Token]):
             # input: cps, scanned: cps
             i += len(tok.cps)
     err.index += offset
+    err.sequence = restore_ignored_in_sequence(err.sequence, input[err.index :])
 
 
 def ens_normalize(text: str) -> str:
