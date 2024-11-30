@@ -558,7 +558,10 @@ def post_check_empty(name: str, input: str) -> Optional[CurableSequence]:
         # fully ignorable name
         return CurableSequence(
             CurableSequenceType.EMPTY_LABEL,
-            index=0,
+            # We set the index to -1 to let offset_err_start()
+            # know that this is the special empty name case.
+            # Otherwise, it would offset the index past the ignored characters.
+            index=-1,
             sequence=input,
             suggested='',
         )
@@ -581,7 +584,7 @@ def post_check_empty(name: str, input: str) -> Optional[CurableSequence]:
         return CurableSequence(
             CurableSequenceType.EMPTY_LABEL,
             index=i,
-            sequence='..',
+            sequence='..',  # !!
             suggested='.',
         )
 
@@ -598,7 +601,7 @@ def post_check_underscore(label: str) -> Optional[CurableSequence]:
             return CurableSequence(
                 CurableSequenceType.UNDERSCORE,
                 index=i,
-                sequence='_' * cnt,
+                sequence='_' * cnt,  # !!
                 suggested='',
             )
 
@@ -608,7 +611,7 @@ def post_check_hyphen(label: str) -> Optional[CurableSequence]:
         return CurableSequence(
             CurableSequenceType.HYPHEN,
             index=2,
-            sequence='--',
+            sequence='--',  # !!
             suggested='',
         )
 
@@ -648,7 +651,7 @@ def make_fenced_error(cps: List[int], start: int, end: int) -> CurableSequence:
     return CurableSequence(
         type_,
         index=start,
-        sequence=''.join(map(chr, cps[start:end])),
+        sequence=''.join(map(chr, cps[start:end])),  # !!
         suggested=suggested,
     )
 
@@ -1097,12 +1100,16 @@ def offset_err_start(err: Optional[CurableSequence], tokens: List[Token]):
     Output of post_check() is not input aligned.
     This function offsets the error index (in-place) to match the input characters.
     """
+    if err.index < 0:
+        # empty name case
+        err.index = 0
+        return
     # index in string that was scanned
     i = 0
     # offset between input and scanned
     offset = 0
     for tok in tokens:
-        if i >= err.index:
+        if i > err.index:
             # everything before the error is aligned
             break
         if tok.type in (TY_IGNORED, TY_DISALLOWED):

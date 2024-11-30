@@ -532,3 +532,20 @@ def test_simple_name_optimization():
     assert len(r.cures) == 0
     assert r.error is None
     assert r.normalizations is None
+
+
+@pytest.mark.parametrize(
+    'input_str, expected_code, expected_index, expected_sequence, expected_suggested',
+    [
+        ('nick.\ufe0f\ufe0f.eth', 'EMPTY_LABEL', 4, '.\ufe0f\ufe0f.', '.'),
+        ('01\ufe0f--345', 'HYPHEN', 3, '--', ''),
+        ('01-\ufe0f-345', 'HYPHEN', 2, '-\ufe0f-', ''),
+        ("\ufe0f'b", 'FENCED_LEADING', 1, '’', ''),
+    ],
+)
+def test_suggestions_with_ignored(input_str, expected_code, expected_index, expected_sequence, expected_suggested):
+    e = ens_process(input_str).error
+    assert e.code == expected_code
+    assert e.index == expected_index
+    assert e.sequence == expected_sequence
+    assert e.suggested == expected_suggested
