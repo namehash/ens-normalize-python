@@ -540,12 +540,36 @@ def test_simple_name_optimization():
         ('nick.\ufe0f\ufe0f.eth', 'EMPTY_LABEL', 4, '.\ufe0f\ufe0f.', '.'),
         ('01\ufe0f--345', 'HYPHEN', 3, '--', ''),
         ('01-\ufe0f-345', 'HYPHEN', 2, '-\ufe0f-', ''),
-        ("\ufe0f'b", 'FENCED_LEADING', 1, '’', ''),
+        ("\ufe0f'b", 'FENCED_LEADING', 1, "'", ''),
     ],
 )
 def test_suggestions_with_ignored(input_str, expected_code, expected_index, expected_sequence, expected_suggested):
     e = ens_process(input_str).error
     assert e.code == expected_code
+    assert e.index == expected_index
+    assert e.sequence == expected_sequence
+    assert e.suggested == expected_suggested
+
+
+@pytest.mark.parametrize(
+    'input_str, expected_type, expected_index, expected_sequence, expected_suggested',
+    [
+        # Test mapped characters with ignored characters
+        ('aA\ufe0fA', NormalizableSequenceType.MAPPED, 1, 'A', 'a'),  # Single capital A gets mapped
+        ('aAB', NormalizableSequenceType.MAPPED, 1, 'A', 'a'),  # First capital gets mapped
+        # Test FE0F normalization
+        ('a🚴‍♂️', NormalizableSequenceType.FE0F, 1, '🚴‍♂️', '🚴‍♂'),  # FE0F in emoji
+        # Test ignored characters
+        ('a\u00ad', NormalizableSequenceType.IGNORED, 1, '\u00ad', ''),  # Soft hyphen is ignored
+        # Test FE0F as ignored
+        ('a\ufe0f', NormalizableSequenceType.IGNORED, 1, '\ufe0f', ''),  # FE0F by itself is ignored
+    ],
+)
+def test_normalizations_with_ignored(input_str, expected_type, expected_index, expected_sequence, expected_suggested):
+    normalizations = ens_normalizations(input_str)
+    assert len(normalizations) > 0
+    e = normalizations[0]  # Get first normalization
+    assert e.type == expected_type
     assert e.index == expected_index
     assert e.sequence == expected_sequence
     assert e.suggested == expected_suggested

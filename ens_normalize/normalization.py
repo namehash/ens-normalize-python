@@ -1096,15 +1096,45 @@ def ens_process(
 
 
 def restore_ignored_in_sequence(seq: str, input: str) -> str:
+    """
+    Restore any ignored characters from the input string into the sequence.
+
+    Args:
+        seq: The sequence to restore ignored characters into
+        input: The input string that may contain ignored characters
+
+    Returns:
+        The sequence with ignored characters restored
+    """
+    if not seq:
+        return seq
+
     seq_out = []
     input_i = 0
-    for c in seq:
-        # TODO: needs to handle mapped characters
-        while input[input_i] != c:
+    seq_len = len(seq)
+    matched = 0
+
+    # Keep going until we've matched all characters in seq
+    while matched < seq_len and input_i < len(input):
+        # For mapped characters, we need to check if the current input char
+        # maps to our target sequence char
+        input_cp = ord(input[input_i])
+        mapped_cps = NORMALIZATION.mapped.get(input_cp, [input_cp])
+        target_cp = ord(seq[matched])
+
+        if input_cp == target_cp or target_cp in mapped_cps:
             seq_out.append(input[input_i])
-            input_i += 1
-        seq_out.append(c)
+            matched += 1
+        elif matched > 0:
+            # If we've started matching but hit a non-match,
+            # include ignored characters between matches
+            seq_out.append(input[input_i])
         input_i += 1
+
+    # If we didn't match everything, use the original sequence
+    if matched < seq_len:
+        return seq
+
     return ''.join(seq_out)
 
 
