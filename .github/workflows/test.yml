@@ -18,10 +18,19 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
         python-version: [3.8, 3.11]
-
+        
+    permissions:
+      contents: write
+      
     steps:
-    - uses: actions/checkout@v3
-
+    - if: ${{ github.event_name == 'pull_request' }}
+      uses: actions/checkout@v4
+      with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          
+    - if: ${{ github.event_name != 'pull_request' }}
+      uses: actions/checkout@v4
+          
     - name: Install poetry
       run: pipx install poetry
 
