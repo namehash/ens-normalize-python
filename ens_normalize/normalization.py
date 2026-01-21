@@ -558,7 +558,10 @@ def post_check_empty(name: str, input: str) -> Optional[CurableSequence]:
         # fully ignorable name
         return CurableSequence(
             CurableSequenceType.EMPTY_LABEL,
-            index=0,
+            # We set the index to -1 to let offset_err_start()
+            # know that this is the special empty name case.
+            # Otherwise, it would offset the index past the ignored characters.
+            index=-1,
             sequence=input,
             suggested='',
         )
@@ -581,7 +584,7 @@ def post_check_empty(name: str, input: str) -> Optional[CurableSequence]:
         return CurableSequence(
             CurableSequenceType.EMPTY_LABEL,
             index=i,
-            sequence='..',
+            sequence='..',  # !!
             suggested='.',
         )
 
@@ -598,7 +601,7 @@ def post_check_underscore(label: str) -> Optional[CurableSequence]:
             return CurableSequence(
                 CurableSequenceType.UNDERSCORE,
                 index=i,
-                sequence='_' * cnt,
+                sequence='_' * cnt,  # !!
                 suggested='',
             )
 
@@ -608,7 +611,7 @@ def post_check_hyphen(label: str) -> Optional[CurableSequence]:
         return CurableSequence(
             CurableSequenceType.HYPHEN,
             index=2,
-            sequence='--',
+            sequence='--',  # !!
             suggested='',
         )
 
@@ -648,7 +651,7 @@ def make_fenced_error(cps: List[int], start: int, end: int) -> CurableSequence:
     return CurableSequence(
         type_,
         index=start,
-        sequence=''.join(map(chr, cps[start:end])),
+        sequence=''.join(map(chr, cps[start:end])),  # !!
         suggested=suggested,
     )
 
@@ -1057,7 +1060,7 @@ def ens_process(
         label_is_greek = []
         error = post_check(emojis_as_fe0f, label_is_greek, input)
         if isinstance(error, CurableSequence):  # or NormalizableSequence because of inheritance
-            offset_err_start(error, tokens)
+            offset_err_start(error, tokens, input)
 
     # else:
     # only the result of post_check() is not input aligned
@@ -1092,17 +1095,64 @@ def ens_process(
     )
 
 
-def offset_err_start(err: Optional[CurableSequence], tokens: List[Token]):
+def restore_ignored_in_sequence(seq: str, input: str) -> str:
+    """
+    Restore any ignored characters from the input string into the sequence.
+
+    Args:
+        seq: The sequence to restore ignored characters into
+        input: The input string that may contain ignored characters
+
+    Returns:
+        The sequence with ignored characters restored
+    """
+    if not seq:
+        return seq
+
+    seq_out = []
+    input_i = 0
+    seq_len = len(seq)
+    matched = 0
+
+    # Keep going until we've matched all characters in seq
+    while matched < seq_len and input_i < len(input):
+        # For mapped characters, we need to check if the current input char
+        # maps to our target sequence char
+        input_cp = ord(input[input_i])
+        mapped_cps = NORMALIZATION.mapped.get(input_cp, [input_cp])
+        target_cp = ord(seq[matched])
+
+        if input_cp == target_cp or target_cp in mapped_cps:
+            seq_out.append(input[input_i])
+            matched += 1
+        elif matched > 0:
+            # If we've started matching but hit a non-match,
+            # include ignored characters between matches
+            seq_out.append(input[input_i])
+        input_i += 1
+
+    # If we didn't match everything, use the original sequence
+    if matched < seq_len:
+        return seq
+
+    return ''.join(seq_out)
+
+
+def offset_err_start(err: Optional[CurableSequence], tokens: List[Token], input: str):
     """
     Output of post_check() is not input aligned.
     This function offsets the error index (in-place) to match the input characters.
     """
+    if err.index < 0:
+        # empty name case
+        err.index = 0
+        return
     # index in string that was scanned
     i = 0
     # offset between input and scanned
     offset = 0
     for tok in tokens:
-        if i >= err.index:
+        if i > err.index:
             # everything before the error is aligned
             break
         if tok.type in (TY_IGNORED, TY_DISALLOWED):
@@ -1127,6 +1177,7 @@ def offset_err_start(err: Optional[CurableSequence], tokens: List[Token]):
             # input: cps, scanned: cps
             i += len(tok.cps)
     err.index += offset
+    err.sequence = restore_ignored_in_sequence(err.sequence, input[err.index :])
 
 
 def ens_normalize(text: str) -> str:
